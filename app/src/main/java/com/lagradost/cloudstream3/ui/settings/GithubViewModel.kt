@@ -1,0 +1,302 @@
+package com.lagradost.cloudstream3.ui.settings
+
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
+import com.lagradost.cloudstream4.AppSettings
+import com.lagradost.cloudstream4.compose.ActionHandler
+import com.lagradost.cloudstream4.compose.DefaultStateContainer
+import com.lagradost.cloudstream4.compose.SingleActiveQuery
+import com.lagradost.cloudstream4.compose.StateContainer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import java.io.FileNotFoundException
+
+@Immutable
+data class GithubState(
+    val dialog: GithubDialog? = null,
+)
+
+@Immutable
+sealed class GithubUpdateDialogState {
+    data class Error(val error: Throwable) : GithubUpdateDialogState()
+    data class DownloadProgress(val progress: Long, val total: Long?) : GithubUpdateDialogState()
+    data class InstallProgress(val progress: Long, val total: Long?) : GithubUpdateDialogState()
+    object Loading : GithubUpdateDialogState()
+    object NoUpdateFound : GithubUpdateDialogState()
+    data class UpdateFound(
+        val file: GithubReleases.GithubFile,
+        val newSha: String?,
+        val oldSha: String?,
+    ) : GithubUpdateDialogState()
+}
+
+@Immutable
+data class GithubDialog(
+    val isPrerelease: Boolean,
+    val isFromUser: Boolean,
+    val state: GithubUpdateDialogState,
+)
+
+@Immutable
+sealed class GithubAction {
+    object AutoSearchForUpdate : GithubAction()
+    object SearchForUpdate : GithubAction()
+    object Dismiss : GithubAction()
+    data class SkipThisUpdate(val file: GithubReleases.GithubFile) : GithubAction()
+    data class Update(val file: GithubReleases.GithubFile) : GithubAction()
+    data class SkipUpdate(val file: GithubReleases.GithubFile) : GithubAction()
+}
+
+const val APK_USERNAME = "codeiva11"
+const val APK_REPOSITORY = "StreamCloud"
+const val APK_PRERELEASE = "pre-release"
+const val APK_CONTENT_TYPE = "application/vnd.android.package-archive"
+
+interface AppUpdater {
+    @Throws
+    suspend fun update(
+        settings: AppSettings,
+        url: String,
+        downloadProgress: (Long, Long?) -> Unit
+    )
+}
+
+/**
+ * Cross-platform downloader for updates served by GitHub.
+ *
+ * To allow this Cross-platform behavior work we split up the UI from the Viewmodel,
+ * and the Viewmodel from the installer.
+ * ```
+ * UI:          Renders the current viewmodel state
+ * Viewmodel:   Searches for updates on GitHub
+ * AppUpdater:  Installs the update from the raw GitHub url
+ *
+ * UI -(onAction)-> Viewmodel -(invokes)-> AppUpdater
+ *   <---(state)---/        <--(callback)--/
+ * ```
+ * */
+class GithubViewModel(
+    val remoteUserName: String,
+    val remoteRepository: String,
+    val remotePrereleaseTag: String,
+    val remoteContentType: String,
+    val versionName: String,
+    val isPrerelease: Boolean,
+    val isDebug: Boolean,
+    val buildSha: String,
+    val settings: AppSettings,
+    val updater: AppUpdater,
+) : ViewModel(), StateContainer<GithubState> by DefaultStateContainer(GithubState()),
+    ActionHandler<GithubAction> {
+    private val updateDispatcher = SingleActiveQuery(Dispatchers.IO)
+
+    override fun onAction(action: GithubAction) {
+        when (action) {
+            GithubAction.SearchForUpdate -> {
+                ioSafe {
+                    searchForUpdate(prerelease = isPrerelease, fromUser = true)
+                }
+            }
+
+            GithubAction.Dismiss -> {
+                viewModelScope.launch {
+                    updateDispatcher.cancel()
+                    updateState { copy(dialog = null) }
+                }
+            }
+
+            is GithubAction.SkipThisUpdate -> {
+                settings.updates.skipUpdate.set(action.file.nodeId)
+                deleteCachedApk(action.file.tagName)
+            }
+
+            GithubAction.AutoSearchForUpdate -> {
+                if (!isDebug && settings.updates.showAppUpdates.get()) {
+                    ioSafe {
+                        searchForUpdate(prerelease = isPrerelease, fromUser = false)
+                    }
+                }
+            }
+
+            is GithubAction.SkipUpdate -> {
+                settings.updates.skipUpdate.set(action.file.nodeId)
+                deleteCachedApk(action.file.tagName)
+            }
+
+            is GithubAction.Update -> {
+                ioSafe {
+                    installUpdate(action.file)
+                }
+            }
+        }
+    }
+
+    /** Cancel the old update, and catch possible errors from the block and show as a new state */
+    private suspend fun dispatchUpdate(block: /* @Throws */ suspend () -> Unit) {
+        updateDispatcher.launch {
+            try {
+                block()
+            } catch (t: Throwable) {
+                // If it was canceled ignore it as we probably launched another update check
+                if (!isActive) {
+                    return@launch
+                }
+                // Otherwise we display the error
+                updateState {
+                    copy(dialog = dialog?.copy(state = GithubUpdateDialogState.Error(t)))
+                }
+            }
+        }
+    }
+
+    private suspend fun installUpdate(file: GithubReleases.GithubFile) = dispatchUpdate {
+        val activity = com.lagradost.cloudstream3.CommonActivity.activity
+        val cachedFile = activity?.let {
+            ApkUpdater.getCachedUpdateFile(it, file.tagName)
+        }
+
+        if (activity != null && cachedFile != null && cachedFile.exists() && cachedFile.length() > 0) {
+            updateState {
+                copy(
+                    dialog = dialog?.copy(
+                        state = GithubUpdateDialogState.InstallProgress(
+                            progress = 0,
+                            total = cachedFile.length()
+                        )
+                    )
+                )
+            }
+            ApkUpdater.installFromFile(activity, cachedFile, settings) { progress, total ->
+                updateState {
+                    copy(
+                        dialog = dialog?.copy(
+                            state = GithubUpdateDialogState.InstallProgress(
+                                progress = progress,
+                                total = total
+                            )
+                        )
+                    )
+                }
+            }
+        } else {
+            updater.update(settings = settings, url = file.downloadUrl) { progress, total ->
+                updateState {
+                    copy(
+                        dialog = dialog?.copy(
+                            state = GithubUpdateDialogState.DownloadProgress(
+                                progress = progress,
+                                total = total
+                            )
+                        )
+                    )
+                }
+            }
+        }
+        updateState {
+            copy(
+                dialog = null
+            )
+        }
+    }
+
+    private suspend fun searchForUpdate(
+        prerelease: Boolean,
+        fromUser: Boolean,
+    ) = dispatchUpdate {
+        val baseDialog = GithubDialog(
+            isPrerelease = prerelease,
+            isFromUser = fromUser,
+            state = GithubUpdateDialogState.Loading
+        )
+
+        updateState {
+            copy(dialog = baseDialog)
+        }
+
+        // If on pre-release check if the sha matches, as we do not look at the version
+        var oldSha: String? = null
+        var newSha: String? = null
+        if (prerelease) {
+            val sha = getSha(remotePrereleaseTag)
+            oldSha = buildSha.take(7)
+            newSha = sha.take(7)
+
+            // Only match the first 7 chars, as that is what is saved
+            if (oldSha == newSha) {
+                updateState {
+                    copy(dialog = baseDialog.copy(state = GithubUpdateDialogState.NoUpdateFound))
+                }
+                return@dispatchUpdate
+            }
+        }
+
+        val release = getRelease(prerelease)
+
+        // If on stable, only check that the display name matches
+        if (!prerelease && release.displayName == versionName) {
+            updateState {
+                copy(dialog = baseDialog.copy(state = GithubUpdateDialogState.NoUpdateFound))
+            }
+            return@dispatchUpdate
+        }
+
+        // If this was automated, and we have pressed "skip this update" then check the node-id
+        if (!fromUser && release.nodeId == settings.updates.skipUpdate.get()) {
+            updateState {
+                copy(dialog = baseDialog.copy(state = GithubUpdateDialogState.NoUpdateFound))
+            }
+            return@dispatchUpdate
+        }
+
+        // If automated background search, download the update APK silently in advance
+        if (!fromUser) {
+            val activity = com.lagradost.cloudstream3.CommonActivity.activity
+            if (activity != null) {
+                ApkUpdater.downloadSilently(activity, release.downloadUrl, release.tagName)
+            }
+        }
+
+        updateState {
+            copy(
+                dialog = baseDialog.copy(
+                    state = GithubUpdateDialogState.UpdateFound(
+                        file = release,
+                        newSha = newSha,
+                        oldSha = oldSha
+                    )
+                )
+            )
+        }
+    }
+
+    @Throws
+    private suspend fun getRelease(prerelease: Boolean) =
+        GithubReleases.getLatestReleaseFile(
+            prerelease = prerelease,
+            userName = remoteUserName,
+            repository = remoteRepository,
+            prereleaseTag = remotePrereleaseTag,
+            contentType = remoteContentType
+        ) ?: throw FileNotFoundException()
+
+    @Throws
+    private suspend fun getSha(tag: String) =
+        GithubReleases.getShaFromTag(
+            tag = tag,
+            userName = remoteUserName,
+            repository = remoteRepository,
+        )
+
+    private fun deleteCachedApk(tagName: String) {
+        val activity = com.lagradost.cloudstream3.CommonActivity.activity
+        if (activity != null) {
+            val file = ApkUpdater.getCachedUpdateFile(activity, tagName)
+            if (file.exists()) {
+                file.delete()
+            }
+        }
+    }
+}
