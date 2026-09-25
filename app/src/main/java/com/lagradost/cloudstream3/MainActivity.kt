@@ -112,6 +112,7 @@ import com.lagradost.cloudstream3.ui.player.GeneratorPlayer
 import com.lagradost.cloudstream3.ui.player.LinkGenerator
 import com.lagradost.cloudstream3.ui.result.LinearListLayout
 import com.lagradost.cloudstream3.ui.result.ResultViewModel2
+import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.result.START_ACTION_RESUME_LATEST
 import com.lagradost.cloudstream3.ui.result.SyncViewModel
 import com.lagradost.cloudstream3.ui.search.SearchFragment

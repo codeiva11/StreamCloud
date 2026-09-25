@@ -19,6 +19,8 @@ import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.plugins.PluginManager.getPluginPath
 import com.lagradost.cloudstream3.plugins.PluginWrapper
 import com.lagradost.cloudstream3.plugins.RepositoryManager
+import com.lagradost.cloudstream3.utils.DataStoreHelper
+import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.utils.txt
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.main
