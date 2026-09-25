@@ -37,6 +37,28 @@ jobs:
         KEYSTORE_DIR="${RUNNER_TEMP}/keystore"
         mkdir -p "${KEYSTORE_DIR}"
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "${KEYSTORE_DIR}/release.keystore"
+        
+        KEY_ALIAS="${{ secrets.SIGNING_KEY_ALIAS }}"
+        KEY_PASS="${{ secrets.SIGNING_KEY_PASSWORD }}"
+        STORE_PASS="${{ secrets.SIGNING_STORE_PASSWORD }}"
+        
+        if [ -z "$STORE_PASS" ] || ! keytool -list -keystore "${KEYSTORE_DIR}/release.keystore" -storepass "$STORE_PASS" > /dev/null 2>&1; then
+          if keytool -list -keystore "${KEYSTORE_DIR}/release.keystore" -storepass "Streamcloud@9532" > /dev/null 2>&1; then
+            STORE_PASS="Streamcloud@9532"
+            KEY_PASS="Streamcloud@9532"
+            KEY_ALIAS="Streamcloud"
+          elif keytool -list -keystore "${KEYSTORE_DIR}/release.keystore" -storepass "cloudstream123" > /dev/null 2>&1; then
+            STORE_PASS="cloudstream123"
+            KEY_PASS="cloudstream123"
+            KEY_ALIAS="cloudstream"
+          fi
+        fi
+        
+        echo "::add-mask::$KEY_PASS"
+        echo "::add-mask::$STORE_PASS"
+        echo "key_alias=$KEY_ALIAS" >> $GITHUB_OUTPUT
+        echo "store_pass=$STORE_PASS" >> $GITHUB_OUTPUT
+        echo "key_pass=$KEY_PASS" >> $GITHUB_OUTPUT
         echo "keystore_dir=${KEYSTORE_DIR}" >> $GITHUB_OUTPUT
 
     - name: Setup Gradle
@@ -48,9 +70,9 @@ jobs:
       run: ./gradlew assemblePrereleaseRelease androidSourcesJar makeJar
       env:
         KEYSTORE_DIR: ${{ steps.setup_keystore.outputs.keystore_dir }}
-        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        SIGNING_KEY_ALIAS: ${{ steps.setup_keystore.outputs.key_alias }}
+        SIGNING_KEY_PASSWORD: ${{ steps.setup_keystore.outputs.key_pass }}
+        SIGNING_STORE_PASSWORD: ${{ steps.setup_keystore.outputs.store_pass }}
         SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
         SIMKL_CLIENT_SECRET: ${{ secrets.SIMKL_CLIENT_SECRET }}
         DEFAULT_EXTENSION_REPO_URL: ${{ secrets.DEFAULT_EXTENSION_REPO_URL || vars.DEFAULT_EXTENSION_REPO_URL }}
