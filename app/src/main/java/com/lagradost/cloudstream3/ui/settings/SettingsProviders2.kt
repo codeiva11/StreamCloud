@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.lagradost.cloudstream3.ui.settings
 import com.lagradost.cloudstream3.utils.BaseComposeFragment
 import com.mihon.presentation.settings.SearchableSettings
