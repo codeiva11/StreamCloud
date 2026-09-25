@@ -3,10 +3,13 @@ package com.lagradost.cloudstream3
 import android.text.format.Formatter.formatFileSize
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -156,19 +159,25 @@ object MainActivityScreen : Screen {
                 )
                 body = { Text(text = state.file.changeLog) }
                 confirmButton = {
-                    WhiteButton(text = stringResource(R.string.update), onClick = {
-                        onAction(Update(state.file))
-                    })
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        WhiteButton(text = stringResource(R.string.update), onClick = {
+                            onAction(Update(state.file))
+                            onAction(Dismiss)
+                        })
+                        BlackButton(text = stringResource(R.string.skip_update), onClick = {
+                            onAction(SkipUpdate(state.file))
+                            onAction(Dismiss)
+                        })
+                        BlackButton(text = stringResource(R.string.cancel), onClick = {
+                            onAction(Dismiss)
+                        })
+                    }
                 }
-                dismissButton = {
-                    BlackButton(text = stringResource(R.string.skip_update), onClick = {
-                        onAction(SkipUpdate(state.file))
-                        onAction(Dismiss)
-                    })
-                    BlackButton(text = stringResource(R.string.cancel), onClick = {
-                        onAction(Dismiss)
-                    })
-                }
+                dismissButton = {}
             }
 
             is GithubUpdateDialogState.InstallProgress -> {
@@ -270,7 +279,7 @@ object MainActivityScreen : Screen {
         }
 
         AlertDialog(
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            properties = DialogProperties(usePlatformDefaultWidth = true),
             containerColor = MaterialTheme.colorScheme.background,
             onDismissRequest = {
                 if (cancelable) {
