@@ -1998,7 +1998,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         handleAppIntent(intent)
 
         ioSafe {
-            // runAutoUpdate() is handled by MainActivityScreen
+            runAutoUpdate()
         }
 
         FcastManager().init(this, false)

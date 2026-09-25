@@ -72,7 +72,7 @@ object MainActivityScreen : Screen {
 
     @Composable
     override fun Content() {
-        GithubView()
+        // Handled by native InAppUpdater in MainActivity
     }
 
     @Composable

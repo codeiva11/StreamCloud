@@ -17,6 +17,8 @@ import com.lagradost.cloudstream3.AutoDownloadMode
 import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CloudStreamApp
 import com.lagradost.cloudstream3.CommonActivity.activity
+import android.widget.Toast
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.MainActivityScreen
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
@@ -25,6 +27,7 @@ import com.lagradost.cloudstream3.utils.BackupUtils
 import com.lagradost.cloudstream3.utils.BackupUtils.restorePrompt
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.InAppUpdater.installPreReleaseIfNeeded
+import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream4.AppSettings
 import com.lagradost.cloudstream4.rememberAppSettings
@@ -90,8 +93,7 @@ object SettingsUpdatesScreen : SearchableSettings {
                         subtitle = BuildConfig.VERSION_NAME,
                         icon = painterResource(R.drawable.mobile_arrow_down_24px),
                         onClick = {
-                            githubViewModel?.onAction(GithubAction.SearchForUpdate)
-                            /*ioSafe {
+                            ioSafe {
                                 if (activity?.runAutoUpdate(false) == false) {
                                     activity?.runOnUiThread {
                                         showToast(
@@ -100,7 +102,7 @@ object SettingsUpdatesScreen : SearchableSettings {
                                         )
                                     }
                                 }
-                            }*/
+                            }
                         }
                     ),
                     Preference.PreferenceItem.TextPreference(
