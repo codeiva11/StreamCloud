@@ -186,6 +186,40 @@ object InAppUpdater {
 
     private val updateLock = Mutex()
 
+    private suspend fun Activity.downloadUpdateSilently(url: String, versionTag: String): File? {
+        return try {
+            Log.d(LOG_TAG, "Silently pre-downloading update in background: $url")
+            val appUpdateName = "CloudStream"
+            val appUpdateSuffix = "apk"
+
+            val targetFile = File(this.cacheDir, "${appUpdateName}_$versionTag.$appUpdateSuffix")
+            if (targetFile.exists() && targetFile.length() > 0) {
+                return targetFile
+            }
+
+            // Delete old updates
+            this.cacheDir.listFiles()?.filter {
+                it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
+            }?.forEach { it.delete() }
+
+            val tempFile = File.createTempFile("CloudStream_tmp", ".$appUpdateSuffix", this.cacheDir)
+            val sink: BufferedSink = tempFile.sink().buffer()
+
+            updateLock.withLock {
+                sink.writeAll(app.get(url).body.source())
+                sink.close()
+                if (tempFile.renameTo(targetFile)) {
+                    targetFile
+                } else {
+                    tempFile
+                }
+            }
+        } catch (e: Exception) {
+            logError(e)
+            null
+        }
+    }
+
     private suspend fun Activity.downloadUpdate(url: String): Boolean {
         try {
             Log.d(LOG_TAG, "Downloading update: $url")
@@ -273,6 +307,12 @@ object InAppUpdater {
             return false
         }
 
+        // Silently pre-download the update in background BEFORE showing the dialog
+        val preDownloadedFile = downloadUpdateSilently(
+            update.updateURL,
+            update.updateVersion ?: "latest"
+        )
+
         runOnUiThread {
             safe {
                 val currentVersion = packageName?.let {
@@ -294,6 +334,12 @@ object InAppUpdater {
                 builder.setMessage(sanitizedChangelog)
                 builder.apply {
                     setPositiveButton(R.string.update) { _, _ ->
+                        // If silently pre-downloaded file is available, install immediately without waiting to download!
+                        if (preDownloadedFile != null && preDownloadedFile.exists() && preDownloadedFile.length() > 0) {
+                            openApk(this@runAutoUpdate, Uri.fromFile(preDownloadedFile))
+                            return@setPositiveButton
+                        }
+
                         // Forcefully start any delayed installations
                         if (ApkInstaller.delayedInstaller?.startInstallation() == true) return@setPositiveButton
 
