@@ -396,6 +396,7 @@ object InAppUpdater {
                                     getString(R.string.skip_update_key), update.updateNodeId ?: ""
                                 )
                             }
+                            preDownloadedFile?.delete()
                         }
                     }
                 }
