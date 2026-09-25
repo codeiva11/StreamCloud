@@ -142,7 +142,7 @@ android {
         buildConfigField(
             "String",
             "DEFAULT_EXTENSION_REPO_URL",
-            "\"" + (System.getenv("DEFAULT_EXTENSION_REPO_URL") ?: (localProperties["default.extension.repo.url"] ?: "https://raw.githubusercontent.com/codeiva11/iva4u-builds/main/repo.json")) + "\""
+            "\"" + (System.getenv("DEFAULT_EXTENSION_REPO_URL") ?: (localProperties["default.extension.repo.url"] ?: "")) + "\""
         )
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
