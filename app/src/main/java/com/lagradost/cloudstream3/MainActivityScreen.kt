@@ -193,7 +193,7 @@ object MainActivityScreen : Screen {
                         })
                     }
                 }
-                dismissButton = null
+                dismissButton = {}
             }
 
             is GithubUpdateDialogState.DownloadProgress -> {
