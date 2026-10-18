@@ -12,6 +12,7 @@ import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.PROVIDER_STATUS_DOWN
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.mvvm.launchSafe
@@ -20,6 +21,7 @@ import com.lagradost.cloudstream3.plugins.PluginManager.getPluginPath
 import com.lagradost.cloudstream3.plugins.PluginWrapper
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.utils.txt
+import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
@@ -143,6 +145,11 @@ class PluginsViewModel : ViewModel() {
                             Toast.LENGTH_SHORT
                         )
                         viewModel?.updatePluginListPrivate(activity, listOf(repository))
+                        // StreamCloud: auto-select MoviesDrive as homepage
+                        if (DataStoreHelper.currentHomePage.isNullOrEmpty() || DataStoreHelper.currentHomePage == "MoviesDrive") {
+                            DataStoreHelper.currentHomePage = "MoviesDrive"
+                            MainActivity.reloadHomeEvent(true)
+                        }
                     } else if (list.isNotEmpty()) {
                         showToast(R.string.download_failed, Toast.LENGTH_SHORT)
                     }
