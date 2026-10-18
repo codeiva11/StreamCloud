@@ -1379,12 +1379,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
 
                     //Automatically download not existing plugins, using mode specified.
+                    // StreamCloud: auto-download by default (FilterByLang)
                     val autoDownloadPlugin = AutoDownloadMode.getEnum(
                         settingsManager.getInt(
                             getString(R.string.auto_download_plugins_key),
-                            0
+                            1
                         )
-                    ) ?: AutoDownloadMode.Disable
+                    ) ?: AutoDownloadMode.FilterByLang
                     if (autoDownloadPlugin != AutoDownloadMode.Disable) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(
                             this@MainActivity,
