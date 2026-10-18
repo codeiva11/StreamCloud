@@ -174,26 +174,19 @@ object MainActivityScreen : Screen {
                     )
                 }
                 confirmButton = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(
-                            2.dp,
-                            Alignment.End
-                        ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BlackButton(text = stringResource(R.string.skip_update), onClick = {
-                            onAction(SkipUpdate(state.file))
-                            onAction(Dismiss)
-                        })
-                        BlackButton(text = stringResource(R.string.cancel), onClick = {
-                            onAction(Dismiss)
-                        })
-                        WhiteButton(text = stringResource(R.string.update), onClick = {
-                            onAction(Update(state.file))
-                        })
-                    }
+                    WhiteButton(text = stringResource(R.string.update), onClick = {
+                        onAction(Update(state.file))
+                    })
                 }
-                dismissButton = {}
+                dismissButton = {
+                    BlackButton(text = stringResource(R.string.skip_update), onClick = {
+                        onAction(SkipUpdate(state.file))
+                        onAction(Dismiss)
+                    })
+                    BlackButton(text = stringResource(R.string.cancel), onClick = {
+                        onAction(Dismiss)
+                    })
+                }
             }
 
             is GithubUpdateDialogState.DownloadProgress -> {
