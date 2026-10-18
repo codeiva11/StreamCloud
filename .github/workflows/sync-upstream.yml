@@ -41,6 +41,7 @@ jobs:
           cp shared/src/commonMain/kotlin/com/lagradost/cloudstream4/viewmodels/GithubViewModel.kt /tmp/custom-backup/GithubViewModel.kt 2>/dev/null || true
           cp app/src/main/java/com/lagradost/cloudstream3/MainActivityScreen.kt /tmp/custom-backup/MainActivityScreen.kt 2>/dev/null || true
           cp app/src/main/res/values/strings.xml /tmp/custom-backup/strings.xml 2>/dev/null || true
+          cp app/src/main/java/com/lagradost/cloudstream3/plugins/RepositoryManager.kt /tmp/custom-backup/RepositoryManager.kt 2>/dev/null || true
           cp .github/workflows/prerelease.yml /tmp/custom-backup/prerelease.yml 2>/dev/null || true
           echo "Custom files backed up"
 
@@ -61,6 +62,7 @@ jobs:
           cp /tmp/custom-backup/GithubViewModel.kt shared/src/commonMain/kotlin/com/lagradost/cloudstream4/viewmodels/GithubViewModel.kt 2>/dev/null || true
           cp /tmp/custom-backup/MainActivityScreen.kt app/src/main/java/com/lagradost/cloudstream3/MainActivityScreen.kt 2>/dev/null || true
           cp /tmp/custom-backup/strings.xml app/src/main/res/values/strings.xml 2>/dev/null || true
+          cp /tmp/custom-backup/RepositoryManager.kt app/src/main/java/com/lagradost/cloudstream3/plugins/RepositoryManager.kt 2>/dev/null || true
           cp /tmp/custom-backup/prerelease.yml .github/workflows/prerelease.yml 2>/dev/null || true
           # Remove any unwanted workflows that came from upstream
           ls .github/workflows/ | grep -v "prerelease.yml" | grep -v "sync-upstream.yml" | xargs -I {} rm -f ".github/workflows/{}" 2>/dev/null || true
