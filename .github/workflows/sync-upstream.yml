@@ -43,6 +43,8 @@ jobs:
           cp app/src/main/res/values/strings.xml /tmp/custom-backup/strings.xml 2>/dev/null || true
           cp app/src/main/java/com/lagradost/cloudstream3/plugins/RepositoryManager.kt /tmp/custom-backup/RepositoryManager.kt 2>/dev/null || true
           cp app/src/main/java/com/lagradost/cloudstream3/MainActivity.kt /tmp/custom-backup/MainActivity.kt 2>/dev/null || true
+          cp app/src/main/java/com/lagradost/cloudstream3/utils/DataStoreHelper.kt /tmp/custom-backup/DataStoreHelper.kt 2>/dev/null || true
+          cp app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/PluginsViewModel.kt /tmp/custom-backup/PluginsViewModel.kt 2>/dev/null || true
           cp .github/workflows/prerelease.yml /tmp/custom-backup/prerelease.yml 2>/dev/null || true
           echo "Custom files backed up"
 
@@ -65,6 +67,8 @@ jobs:
           cp /tmp/custom-backup/strings.xml app/src/main/res/values/strings.xml 2>/dev/null || true
           cp /tmp/custom-backup/RepositoryManager.kt app/src/main/java/com/lagradost/cloudstream3/plugins/RepositoryManager.kt 2>/dev/null || true
           cp /tmp/custom-backup/MainActivity.kt app/src/main/java/com/lagradost/cloudstream3/MainActivity.kt 2>/dev/null || true
+          cp /tmp/custom-backup/DataStoreHelper.kt app/src/main/java/com/lagradost/cloudstream3/utils/DataStoreHelper.kt 2>/dev/null || true
+          cp /tmp/custom-backup/PluginsViewModel.kt app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/PluginsViewModel.kt 2>/dev/null || true
           cp /tmp/custom-backup/prerelease.yml .github/workflows/prerelease.yml 2>/dev/null || true
           # Remove any unwanted workflows that came from upstream
           ls .github/workflows/ | grep -v "prerelease.yml" | grep -v "sync-upstream.yml" | xargs -I {} rm -f ".github/workflows/{}" 2>/dev/null || true
