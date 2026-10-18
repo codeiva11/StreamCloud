@@ -98,18 +98,7 @@ data class PluginWrapper(
 object RepositoryManager {
     const val ONLINE_PLUGINS_FOLDER = "Extensions"
     val PREBUILT_REPOSITORIES: Array<RepositoryData> by lazy {
-        val defaultRepo = if (com.lagradost.cloudstream3.BuildConfig.DEFAULT_EXTENSION_REPO_URL.isNotBlank()) {
-            arrayOf(
-                RepositoryData(
-                    iconUrl = "https://wsrv.nl/?url=https://avatars.githubusercontent.com/u/91174352&mask=circle",
-                    name = "Iva4u Repo(Hindi)",
-                    url = com.lagradost.cloudstream3.BuildConfig.DEFAULT_EXTENSION_REPO_URL
-                )
-            )
-        } else emptyArray()
-
-        val userRepos = getKey<Array<RepositoryData>>("PREBUILT_REPOSITORIES") ?: emptyArray()
-        (defaultRepo + userRepos).distinctBy { it.url }.toTypedArray()
+        getKey<Array<RepositoryData>>("PREBUILT_REPOSITORIES") ?: emptyArray()
     }
     private val GH_REGEX =
         Regex("^https://raw.githubusercontent.com/([A-Za-z0-9-]+)/([A-Za-z0-9_.-]+)/(.*)$")

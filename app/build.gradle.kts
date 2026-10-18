@@ -37,26 +37,13 @@ abstract class GenerateGitHashTask : DefaultTask() {
                 // Read the commit hash from .git/HEAD
                 val headContent = head.readText().trim()
                 if (headContent.startsWith("ref:")) {
-                    val refPath = headContent.substring(5).trim() // e.g., refs/heads/main
+                    val refPath = headContent.substring(5) // e.g., refs/heads/main
                     val commitFile = File(head.parentFile, refPath)
-                    if (commitFile.exists()) {
-                        commitFile.readText().trim()
-                    } else {
-                        val packedRefs = File(head.parentFile, "packed-refs")
-                        if (packedRefs.exists()) {
-                            val line = packedRefs.readLines().firstOrNull { it.endsWith(refPath) }
-                            line?.split(" ")?.firstOrNull()?.trim() ?: ""
-                        } else ""
-                    }
+                    if (commitFile.exists()) commitFile.readText().trim() else ""
                 } else headContent // If it's a detached HEAD (commit hash directly)
             } else "" // If .git/HEAD doesn't exist
         } catch (_: Throwable) {
             "" // Just set to an empty string if any exception occurs
-        }.ifBlank {
-            try {
-                val process = ProcessBuilder("git", "rev-parse", "HEAD").redirectErrorStream(true).start()
-                process.inputStream.bufferedReader().readText().trim()
-            } catch (_: Throwable) { "" }
         }.take(7) // Get the short commit hash
 
         val outFile = outputDir.file("git-hash.txt").get().asFile
@@ -102,8 +89,8 @@ android {
         // so won't kill the configuration cache.
         if (System.getenv("SIGNING_KEY_ALIAS") != null) {
             create("prerelease") {
-                val tmpFilePath = System.getenv("KEYSTORE_DIR") ?: (System.getProperty("user.home") + "/work/_temp/keystore/")
-                val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.firstOrNull() ?: File(tmpFilePath)
+                val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
+                val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.first()
 
                 storeFile = prereleaseStoreFile?.let { file(it) }
                 storePassword = System.getenv("SIGNING_STORE_PASSWORD")
@@ -145,12 +132,12 @@ android {
         buildConfigField(
             "String",
             "MAL_KEY",
-            "\"" + (System.getenv("MAL_KEY") ?: (localProperties["mal.key"] ?: "")) + "\""
+            "\"" + (System.getenv("MAL_KEY") ?: localProperties["mal.key"]) + "\""
         )
         buildConfigField(
             "String",
             "ANILIST_KEY",
-            "\"" + (System.getenv("ANILIST_KEY") ?: (localProperties["anilist.key"] ?: "")) + "\""
+            "\"" + (System.getenv("ANILIST_KEY") ?: localProperties["anilist.key"]) + "\""
         )
         buildConfigField(
             "String",

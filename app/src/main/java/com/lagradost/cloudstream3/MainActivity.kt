@@ -112,7 +112,6 @@ import com.lagradost.cloudstream3.ui.player.GeneratorPlayer
 import com.lagradost.cloudstream3.ui.player.LinkGenerator
 import com.lagradost.cloudstream3.ui.result.LinearListLayout
 import com.lagradost.cloudstream3.ui.result.ResultViewModel2
-import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.result.START_ACTION_RESUME_LATEST
 import com.lagradost.cloudstream3.ui.result.SyncViewModel
 import com.lagradost.cloudstream3.ui.search.SearchFragment
@@ -124,7 +123,6 @@ import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.ui.settings.Globals.updateTv
 import com.lagradost.cloudstream3.ui.settings.SettingsGeneral
-import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.setup.HAS_DONE_SETUP_KEY
 import com.lagradost.cloudstream3.ui.setup.SetupFragmentExtensions
 import com.lagradost.cloudstream3.utils.ApkInstaller
@@ -181,6 +179,7 @@ import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 import com.lagradost.cloudstream3.utils.setText
 import com.lagradost.cloudstream3.utils.setTextHtml
 import com.lagradost.cloudstream3.utils.txt
+import com.lagradost.cloudstream4.compose.CloudStreamThemeAppSettings
 import com.lagradost.cloudstream4.theme.CloudStreamTheme
 import com.lagradost.safefile.SafeFile
 import kotlinx.coroutines.Job
@@ -1303,7 +1302,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
             composeView.apply {
                 setContent {
-                    CloudStreamTheme {
+                    CloudStreamThemeAppSettings {
                         MainActivityScreen.Content()
                     }
                 }
@@ -1377,13 +1376,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         )
                     } else {
                         ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                    }
-
-                    // If user has no plugins installed yet, automatically download all plugins from prebuilt repository
-                    if (PluginManager.getPluginsOnline().isEmpty() && PluginManager.getPluginsLocal().isEmpty()) {
-                        RepositoryManager.PREBUILT_REPOSITORIES.firstOrNull()?.let { prebuiltRepo ->
-                            PluginsViewModel.downloadAll(this@MainActivity, prebuiltRepo, null)
-                        }
                     }
 
                     //Automatically download not existing plugins, using mode specified.
@@ -1997,9 +1989,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         handleAppIntent(intent)
 
-        ioSafe {
-            runAutoUpdate()
-        }
+        //ioSafe {
+        //    runAutoUpdate()
+        //}
 
         FcastManager().init(this, false)
 

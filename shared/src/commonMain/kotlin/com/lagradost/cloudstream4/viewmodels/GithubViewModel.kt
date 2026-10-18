@@ -1,18 +1,18 @@
-package com.lagradost.cloudstream3.ui.settings
+package com.lagradost.cloudstream4.viewmodels
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream4.AppSettings
-import com.lagradost.cloudstream4.compose.ActionHandler
-import com.lagradost.cloudstream4.compose.DefaultStateContainer
-import com.lagradost.cloudstream4.compose.SingleActiveQuery
-import com.lagradost.cloudstream4.compose.StateContainer
+import com.lagradost.cloudstream4.state.ActionHandler
+import com.lagradost.cloudstream4.state.DefaultStateContainer
+import com.lagradost.cloudstream4.state.SingleActiveQuery
+import com.lagradost.cloudstream4.state.StateContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.io.FileNotFoundException
 
 @Immutable
 data class GithubState(
@@ -27,7 +27,7 @@ sealed class GithubUpdateDialogState {
     object Loading : GithubUpdateDialogState()
     object NoUpdateFound : GithubUpdateDialogState()
     data class UpdateFound(
-        val file: GithubReleases.GithubFile,
+        val file: GithubFile,
         val newSha: String?,
         val oldSha: String?,
     ) : GithubUpdateDialogState()
@@ -40,28 +40,133 @@ data class GithubDialog(
     val state: GithubUpdateDialogState,
 )
 
+/** GitHub file update package */
+@Immutable
+data class GithubFile(
+    /** File digest, sha:xxx */
+    val digest: String?,
+    /** File url for download */
+    val downloadUrl: String,
+    /** Filename without the extension */
+    val displayName: String,
+    /** Changelog, aka the commit message */
+    val changeLog: String,
+    /** Name of the tag, aka unique release name like vX.X.X or pre-release */
+    val tagName: String,
+    /** Unique node id */
+    val nodeId: String,
+)
+
 @Immutable
 sealed class GithubAction {
     object AutoSearchForUpdate : GithubAction()
     object SearchForUpdate : GithubAction()
     object Dismiss : GithubAction()
-    data class SkipThisUpdate(val file: GithubReleases.GithubFile) : GithubAction()
-    data class Update(val file: GithubReleases.GithubFile) : GithubAction()
-    data class SkipUpdate(val file: GithubReleases.GithubFile) : GithubAction()
+    data class SkipThisUpdate(val file: GithubFile) : GithubAction()
+    data class Update(val file: GithubFile) : GithubAction()
+    data class SkipUpdate(val file: GithubFile) : GithubAction()
 }
-
-const val APK_USERNAME = "codeiva11"
-const val APK_REPOSITORY = "StreamCloud"
-const val APK_PRERELEASE = "pre-release"
-const val APK_CONTENT_TYPE = "application/vnd.android.package-archive"
 
 interface AppUpdater {
     @Throws
     suspend fun update(
         settings: AppSettings,
         url: String,
-        downloadProgress: (Long, Long?) -> Unit
+        digest: DigestPair?,
+        downloadProgress: (Long, Long?) -> Unit,
     )
+
+    /**
+     * Downloads an update apk quietly in the background and caches it.
+     * Returns the absolute path of the cached file, or null on failure.
+     * If a valid cached file already exists, returns its path immediately.
+     */
+    suspend fun downloadSilently(
+        url: String,
+        versionTag: String,
+        digest: DigestPair?,
+    ): String?
+
+    /**
+     * Installs an update from a previously cached apk file.
+     */
+    @Throws
+    suspend fun installFromFile(
+        filePath: String,
+        settings: AppSettings,
+        installProgress: (Long, Long?) -> Unit,
+    )
+
+    /**
+     * Returns the absolute path of the cached update apk for the given version,
+     * or null when nothing is cached.
+     */
+    fun getCachedUpdatePath(versionTag: String): String?
+
+    /**
+     * Deletes the cached update apk for the given version, if present.
+     */
+    fun deleteCachedUpdate(versionTag: String)
+}
+
+interface GithubRepository {
+    @Throws
+    suspend fun getRelease(
+        userName: String,
+        repository: String,
+        prerelease: Boolean,
+        prereleaseTag: String,
+        contentType: String,
+    ): GithubFile
+
+    @Throws
+    suspend fun getSha(
+        userName: String,
+        repository: String,
+        tag: String,
+    ): String
+}
+
+/** The digest pair to verify that a file is correctly downloaded */
+data class DigestPair(
+    val algorithm: String,
+    val digest: ByteArray,
+) {
+    companion object {
+        // "sha256:XXXX" or "sha256-XXXX" -> "sha256", bytearray(XXXX)
+        fun parse(digestPair: String?): DigestPair? {
+            if (digestPair == null) return null
+
+            var split = digestPair.split(":", limit = 2)
+            if (split.size != 2) {
+                split = digestPair.split("-", limit = 2)
+            }
+            if (split.size != 2) {
+                return null
+            }
+
+            val digestAlgorithm = split.getOrNull(0) ?: return null
+            val digestByteArray = safe { split.getOrNull(1)?.hexToByteArray() } ?: return null
+
+            return DigestPair(digestAlgorithm, digestByteArray)
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        val other = other as? DigestPair ?: return false
+
+        if (algorithm != other.algorithm) return false
+        if (!digest.contentEquals(other.digest)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = algorithm.hashCode()
+        result = 31 * result + digest.contentHashCode()
+        return result
+    }
 }
 
 /**
@@ -89,6 +194,7 @@ class GithubViewModel(
     val buildSha: String,
     val settings: AppSettings,
     val updater: AppUpdater,
+    val repository: GithubRepository,
 ) : ViewModel(), StateContainer<GithubState> by DefaultStateContainer(GithubState()),
     ActionHandler<GithubAction> {
     private val updateDispatcher = SingleActiveQuery(Dispatchers.IO)
@@ -110,7 +216,7 @@ class GithubViewModel(
 
             is GithubAction.SkipThisUpdate -> {
                 settings.updates.skipUpdate.set(action.file.nodeId)
-                deleteCachedApk(action.file.tagName)
+                updater.deleteCachedUpdate(action.file.tagName)
             }
 
             GithubAction.AutoSearchForUpdate -> {
@@ -123,7 +229,7 @@ class GithubViewModel(
 
             is GithubAction.SkipUpdate -> {
                 settings.updates.skipUpdate.set(action.file.nodeId)
-                deleteCachedApk(action.file.tagName)
+                updater.deleteCachedUpdate(action.file.tagName)
             }
 
             is GithubAction.Update -> {
@@ -152,24 +258,15 @@ class GithubViewModel(
         }
     }
 
-    private suspend fun installUpdate(file: GithubReleases.GithubFile) = dispatchUpdate {
-        val activity = com.lagradost.cloudstream3.CommonActivity.activity
-        val cachedFile = activity?.let {
-            ApkUpdater.getCachedUpdateFile(it, file.tagName)
-        }
+    private suspend fun installUpdate(file: GithubFile) = dispatchUpdate {
+        val cachedPath = updater.getCachedUpdatePath(file.tagName)
 
-        if (activity != null && cachedFile != null && cachedFile.exists() && cachedFile.length() > 0) {
-            updateState {
-                copy(
-                    dialog = dialog?.copy(
-                        state = GithubUpdateDialogState.InstallProgress(
-                            progress = 0,
-                            total = cachedFile.length()
-                        )
-                    )
-                )
-            }
-            ApkUpdater.installFromFile(activity, cachedFile, settings) { progress, total ->
+        if (cachedPath != null) {
+            // APK was pre-downloaded in the background, install straight from cache
+            updater.installFromFile(
+                filePath = cachedPath,
+                settings = settings,
+            ) { progress, total ->
                 updateState {
                     copy(
                         dialog = dialog?.copy(
@@ -182,7 +279,11 @@ class GithubViewModel(
                 }
             }
         } else {
-            updater.update(settings = settings, url = file.downloadUrl) { progress, total ->
+            updater.update(
+                settings = settings,
+                url = file.downloadUrl,
+                digest = DigestPair.parse(file.digest),
+            ) { progress, total ->
                 updateState {
                     copy(
                         dialog = dialog?.copy(
@@ -220,7 +321,11 @@ class GithubViewModel(
         var oldSha: String? = null
         var newSha: String? = null
         if (prerelease) {
-            val sha = getSha(remotePrereleaseTag)
+            val sha = repository.getSha(
+                tag = remotePrereleaseTag,
+                userName = remoteUserName,
+                repository = remoteRepository,
+            )
             oldSha = buildSha.take(7)
             newSha = sha.take(7)
 
@@ -233,7 +338,13 @@ class GithubViewModel(
             }
         }
 
-        val release = getRelease(prerelease)
+        val release = repository.getRelease(
+            prerelease = prerelease,
+            userName = remoteUserName,
+            repository = remoteRepository,
+            prereleaseTag = remotePrereleaseTag,
+            contentType = remoteContentType
+        )
 
         // If on stable, only check that the display name matches
         if (!prerelease && release.displayName == versionName) {
@@ -251,12 +362,14 @@ class GithubViewModel(
             return@dispatchUpdate
         }
 
-        // If automated background search, download the update APK silently in advance
+        // Automated check found an update: fetch the apk quietly now so that
+        // tapping "Update" later installs instantly without waiting on a download.
         if (!fromUser) {
-            val activity = com.lagradost.cloudstream3.CommonActivity.activity
-            if (activity != null) {
-                ApkUpdater.downloadSilently(activity, release.downloadUrl, release.tagName)
-            }
+            updater.downloadSilently(
+                url = release.downloadUrl,
+                versionTag = release.tagName,
+                digest = DigestPair.parse(release.digest),
+            )
         }
 
         updateState {
@@ -269,34 +382,6 @@ class GithubViewModel(
                     )
                 )
             )
-        }
-    }
-
-    @Throws
-    private suspend fun getRelease(prerelease: Boolean) =
-        GithubReleases.getLatestReleaseFile(
-            prerelease = prerelease,
-            userName = remoteUserName,
-            repository = remoteRepository,
-            prereleaseTag = remotePrereleaseTag,
-            contentType = remoteContentType
-        ) ?: throw FileNotFoundException()
-
-    @Throws
-    private suspend fun getSha(tag: String) =
-        GithubReleases.getShaFromTag(
-            tag = tag,
-            userName = remoteUserName,
-            repository = remoteRepository,
-        )
-
-    private fun deleteCachedApk(tagName: String) {
-        val activity = com.lagradost.cloudstream3.CommonActivity.activity
-        if (activity != null) {
-            val file = ApkUpdater.getCachedUpdateFile(activity, tagName)
-            if (file.exists()) {
-                file.delete()
-            }
         }
     }
 }
