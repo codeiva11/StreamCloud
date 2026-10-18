@@ -176,7 +176,7 @@ object MainActivityScreen : Screen {
                 confirmButton = {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(
-                            4.dp,
+                            2.dp,
                             Alignment.End
                         ),
                         verticalAlignment = Alignment.CenterVertically
