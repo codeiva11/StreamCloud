@@ -23,15 +23,44 @@ jobs:
           git remote add upstream https://github.com/recloudstream/cloudstream.git || true
           git fetch upstream master
 
+      # NOTE: StreamCloud was imported as a snapshot, so its history shares no
+      # commits with upstream. `git rev-list HEAD..upstream/master` would count
+      # the ENTIRE upstream history and `git merge` would refuse with
+      # "refusing to merge unrelated histories". Instead we track the last
+      # synced upstream SHA in .github/last-upstream-sync and cherry-pick only
+      # the new upstream commits on top, letting StreamCloud's versions win
+      # any conflicting hunk (-X ours) so customizations are preserved.
       - name: Check for upstream updates
         id: check
         run: |
-          BEHIND=$(git rev-list --count HEAD..upstream/master)
+          MARKER=".github/last-upstream-sync"
+          UPSTREAM_HEAD=$(git rev-parse upstream/master)
+          echo "upstream_head=$UPSTREAM_HEAD" >> $GITHUB_OUTPUT
+          BASE=""
+          if [ -f "$MARKER" ]; then
+            BASE=$(cat "$MARKER")
+          fi
+          if [ -n "$BASE" ] && git merge-base --is-ancestor "$BASE" upstream/master 2>/dev/null; then
+            BEHIND=$(git rev-list --count --no-merges "$BASE"..upstream/master)
+            echo "base=$BASE" >> $GITHUB_OUTPUT
+          else
+            BEHIND="unknown"
+          fi
           echo "behind=$BEHIND" >> $GITHUB_OUTPUT
-          echo "Upstream is $BEHIND commits ahead"
+          echo "Upstream is $BEHIND commit(s) ahead of last sync (upstream HEAD: $UPSTREAM_HEAD)"
+
+      - name: Record upstream baseline (first run)
+        if: steps.check.outputs.behind == 'unknown'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "${{ steps.check.outputs.upstream_head }}" > .github/last-upstream-sync
+          git add .github/last-upstream-sync
+          git commit -m "chore(sync): record upstream baseline for auto-sync" || echo "Nothing to commit"
+          git push origin main || echo "Push failed or nothing to push"
 
       - name: Backup StreamCloud customizations
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.behind != '0' && steps.check.outputs.behind != 'unknown'
         run: |
           mkdir -p /tmp/custom-backup
           # Custom features that must be preserved
@@ -48,16 +77,34 @@ jobs:
           cp .github/workflows/prerelease.yml /tmp/custom-backup/prerelease.yml 2>/dev/null || true
           echo "Custom files backed up"
 
-      - name: Merge upstream changes
-        if: steps.check.outputs.behind != '0'
+      - name: Sync upstream changes
+        id: sync
+        if: steps.check.outputs.behind != '0' && steps.check.outputs.behind != 'unknown'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git merge upstream/master --no-edit -m "Merge upstream cloudstream changes" || true
-          echo "Merge completed (conflicts resolved in next step if any)"
+          BASE="${{ steps.check.outputs.base }}"
+          # -X ours: on any conflicting hunk keep StreamCloud's version, so
+          # customizations always win; clean upstream hunks are applied.
+          # Commits whose changes are already present become empty after
+          # -X ours resolution -> skip them. Anything else failing is a real
+          # problem: abort and turn the run red (no `|| true` here).
+          for C in $(git rev-list --reverse --no-merges "$BASE"..upstream/master); do
+            if git cherry-pick --strategy=recursive -X ours "$C"; then
+              echo "Applied upstream $C"
+            elif [ -z "$(git diff --name-only --diff-filter=U)" ] && git diff --cached --quiet; then
+              git cherry-pick --skip
+              echo "Skipped $C (changes already present)"
+            else
+              echo "::error::cherry-pick of upstream $C failed with conflicts"
+              git cherry-pick --abort || true
+              exit 1
+            fi
+          done
+          echo "Synced ${{ steps.check.outputs.behind }} upstream commit(s)"
 
       - name: Restore StreamCloud customizations
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.behind != '0' && steps.check.outputs.behind != 'unknown' && steps.sync.outcome == 'success'
         run: |
           cp /tmp/custom-backup/build.gradle.kts app/build.gradle.kts 2>/dev/null || true
           cp /tmp/custom-backup/GithubReleases.kt app/src/main/java/com/lagradost/cloudstream3/ui/settings/GithubReleases.kt 2>/dev/null || true
@@ -75,8 +122,10 @@ jobs:
           echo "Customizations restored, unwanted workflows removed"
 
       - name: Commit and push
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.behind != '0' && steps.check.outputs.behind != 'unknown' && steps.sync.outcome == 'success'
         run: |
+          # Advance the baseline marker so next run only picks up newer commits
+          echo "${{ steps.check.outputs.upstream_head }}" > .github/last-upstream-sync
           git add -A
           git commit -m "Sync upstream: preserve StreamCloud customizations" || echo "Nothing new to commit"
           git push origin main || echo "Push failed or nothing to push"
