@@ -174,32 +174,22 @@ object MainActivityScreen : Screen {
                 }
                 confirmButton = {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            MaterialTheme.padding.small,
+                            Alignment.End
+                        ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        BlackButton(
-                            text = stringResource(R.string.skip_update),
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                onAction(SkipUpdate(state.file))
-                                onAction(Dismiss)
-                            }
-                        )
-                        BlackButton(
-                            text = stringResource(R.string.cancel),
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                onAction(Dismiss)
-                            }
-                        )
-                        WhiteButton(
-                            text = stringResource(R.string.update),
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                onAction(Update(state.file))
-                            }
-                        )
+                        BlackButton(text = stringResource(R.string.skip_update), onClick = {
+                            onAction(SkipUpdate(state.file))
+                            onAction(Dismiss)
+                        })
+                        BlackButton(text = stringResource(R.string.cancel), onClick = {
+                            onAction(Dismiss)
+                        })
+                        WhiteButton(text = stringResource(R.string.update), onClick = {
+                            onAction(Update(state.file))
+                        })
                     }
                 }
                 dismissButton = {}
