@@ -1,0 +1,74 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout StreamCloud
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/recloudstream/cloudstream.git || true
+          git fetch upstream master
+
+      - name: Check for upstream updates
+        id: check
+        run: |
+          BEHIND=$(git rev-list --count HEAD..upstream/master)
+          echo "behind=$BEHIND" >> $GITHUB_OUTPUT
+          echo "Upstream is $BEHIND commits ahead"
+
+      - name: Backup StreamCloud customizations
+        if: steps.check.outputs.behind != '0'
+        run: |
+          mkdir -p /tmp/custom-backup
+          # Custom features that must be preserved
+          cp app/build.gradle.kts /tmp/custom-backup/build.gradle.kts 2>/dev/null || true
+          cp app/src/main/java/com/lagradost/cloudstream3/ui/settings/GithubReleases.kt /tmp/custom-backup/GithubReleases.kt 2>/dev/null || true
+          cp app/src/main/java/com/lagradost/cloudstream3/ui/settings/ApkUpdater.kt /tmp/custom-backup/ApkUpdater.kt 2>/dev/null || true
+          cp shared/src/commonMain/kotlin/com/lagradost/cloudstream4/viewmodels/GithubViewModel.kt /tmp/custom-backup/GithubViewModel.kt 2>/dev/null || true
+          cp app/src/main/java/com/lagradost/cloudstream3/MainActivityScreen.kt /tmp/custom-backup/MainActivityScreen.kt 2>/dev/null || true
+          cp app/src/main/res/values/strings.xml /tmp/custom-backup/strings.xml 2>/dev/null || true
+          cp .github/workflows/prerelease.yml /tmp/custom-backup/prerelease.yml 2>/dev/null || true
+          echo "Custom files backed up"
+
+      - name: Merge upstream changes
+        if: steps.check.outputs.behind != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git merge upstream/master --no-edit -m "Merge upstream cloudstream changes" || true
+          echo "Merge completed (conflicts resolved in next step if any)"
+
+      - name: Restore StreamCloud customizations
+        if: steps.check.outputs.behind != '0'
+        run: |
+          cp /tmp/custom-backup/build.gradle.kts app/build.gradle.kts 2>/dev/null || true
+          cp /tmp/custom-backup/GithubReleases.kt app/src/main/java/com/lagradost/cloudstream3/ui/settings/GithubReleases.kt 2>/dev/null || true
+          cp /tmp/custom-backup/ApkUpdater.kt app/src/main/java/com/lagradost/cloudstream3/ui/settings/ApkUpdater.kt 2>/dev/null || true
+          cp /tmp/custom-backup/GithubViewModel.kt shared/src/commonMain/kotlin/com/lagradost/cloudstream4/viewmodels/GithubViewModel.kt 2>/dev/null || true
+          cp /tmp/custom-backup/MainActivityScreen.kt app/src/main/java/com/lagradost/cloudstream3/MainActivityScreen.kt 2>/dev/null || true
+          cp /tmp/custom-backup/strings.xml app/src/main/res/values/strings.xml 2>/dev/null || true
+          cp /tmp/custom-backup/prerelease.yml .github/workflows/prerelease.yml 2>/dev/null || true
+          # Remove any unwanted workflows that came from upstream
+          ls .github/workflows/ | grep -v "prerelease.yml" | grep -v "sync-upstream.yml" | xargs -I {} rm -f ".github/workflows/{}" 2>/dev/null || true
+          echo "Customizations restored, unwanted workflows removed"
+
+      - name: Commit and push
+        if: steps.check.outputs.behind != '0'
+        run: |
+          git add -A
+          git commit -m "Sync upstream: preserve StreamCloud customizations" || echo "Nothing new to commit"
+          git push origin main || echo "Push failed or nothing to push"
