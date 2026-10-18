@@ -3,7 +3,9 @@ package com.lagradost.cloudstream3
 import android.text.format.Formatter.formatFileSize
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -176,13 +178,18 @@ object MainActivityScreen : Screen {
                     })
                 }
                 dismissButton = {
-                    BlackButton(text = stringResource(R.string.skip_update), onClick = {
-                        onAction(SkipUpdate(state.file))
-                        onAction(Dismiss)
-                    })
-                    BlackButton(text = stringResource(R.string.cancel), onClick = {
-                        onAction(Dismiss)
-                    })
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BlackButton(text = stringResource(R.string.skip_update), onClick = {
+                            onAction(SkipUpdate(state.file))
+                            onAction(Dismiss)
+                        })
+                        BlackButton(text = stringResource(R.string.cancel), onClick = {
+                            onAction(Dismiss)
+                        })
+                    }
                 }
             }
 
