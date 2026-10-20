@@ -8,6 +8,9 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import android.webkit.CookieManager
+import android.webkit.JsPromptResult
+import android.webkit.JsResult
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -22,7 +25,10 @@ import okhttp3.Response
 import org.json.JSONObject
 import kotlin.random.Random
 
-class UpgradedCloudflareKiller(private val context: Context) : Interceptor {
+class UpgradedCloudflareKiller(context: Context) : Interceptor {
+
+    // FIX 1: Always store applicationContext (even if an Activity context is passed) — 0% memory leak risk
+    private val appContext: Context = context.applicationContext
 
     companion object {
         private val savedCookies = mutableMapOf<String, String>()
@@ -66,7 +72,9 @@ class UpgradedCloudflareKiller(private val context: Context) : Interceptor {
         withContext(Dispatchers.Main) {
             val deferred = CompletableDeferred<Boolean>()
             val handler = Handler(Looper.getMainLooper())
-            val webView = WebView(context)
+
+            // Safe appContext
+            val webView = WebView(appContext)
 
             webView.measure(
                 View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
@@ -88,6 +96,22 @@ class UpgradedCloudflareKiller(private val context: Context) : Interceptor {
                     .replace("; wv", "")
                     .replace(Regex("Version/\\d+\\.\\d+\\s+"), "")
                 cleanUserAgent = userAgentString
+            }
+
+            // FIX 2: Prevent JS Alert/Confirm popup crashes with applicationContext
+            webView.webChromeClient = object : WebChromeClient() {
+                override fun onJsAlert(v: WebView?, u: String?, m: String?, r: JsResult?): Boolean {
+                    r?.confirm()
+                    return true
+                }
+                override fun onJsConfirm(v: WebView?, u: String?, m: String?, r: JsResult?): Boolean {
+                    r?.confirm()
+                    return true
+                }
+                override fun onJsPrompt(v: WebView?, u: String?, m: String?, d: String?, r: JsPromptResult?): Boolean {
+                    r?.confirm()
+                    return true
+                }
             }
 
             val checkAndClickLoop = object : Runnable {
@@ -129,9 +153,9 @@ class UpgradedCloudflareKiller(private val context: Context) : Interceptor {
                             if (!clean.isNullOrEmpty()) {
                                 val json = JSONObject(clean)
                                 if (json.optBoolean("found")) {
-                                    val x = json.getDouble("x").toFloat() * webView.scale
-                                    val y = json.getDouble("y").toFloat() * webView.scale
-                                    simulateTap(webView, x, y)
+                                    val x = (json.getDouble("x").toFloat() + Random.nextInt(-3, 4)) * webView.scale
+                                    val y = (json.getDouble("y").toFloat() + Random.nextInt(-3, 4)) * webView.scale
+                                    simulateRealisticFingerTap(webView, x, y)
                                 }
                             }
                         } catch (_: Exception) {}
@@ -156,20 +180,68 @@ class UpgradedCloudflareKiller(private val context: Context) : Interceptor {
 
             handler.removeCallbacksAndMessages(null)
             webView.stopLoading()
+            webView.clearHistory()
+            webView.removeAllViews()
             webView.destroy()
             return@withContext success
         }
 
-    private fun simulateTap(view: WebView, x: Float, y: Float) {
+    // FIX 3: Realistic human finger touch (TOOL_TYPE_FINGER + Pressure + Micro-movement)
+    private fun simulateRealisticFingerTap(view: WebView, x: Float, y: Float) {
         val downTime = SystemClock.uptimeMillis()
-        val duration = Random.nextLong(80, 150)
-        val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0)
-        val up = MotionEvent.obtain(downTime, downTime + duration, MotionEvent.ACTION_UP, x, y, 0)
-        view.dispatchTouchEvent(down)
+        val moveDelay = Random.nextLong(30, 60)
+        val upDelay = moveDelay + Random.nextLong(50, 90)
+
+        val properties = arrayOf(MotionEvent.PointerProperties().apply {
+            id = 0
+            toolType = MotionEvent.TOOL_TYPE_FINGER
+        })
+
+        val downCoords = arrayOf(MotionEvent.PointerCoords().apply {
+            this.x = x
+            this.y = y
+            pressure = Random.nextDouble(0.45, 0.75).toFloat()
+            size = Random.nextDouble(0.15, 0.30).toFloat()
+        })
+
+        // 1. Finger down (ACTION_DOWN)
+        val downEvent = MotionEvent.obtain(
+            downTime, downTime, MotionEvent.ACTION_DOWN,
+            1, properties, downCoords, 0, 0, 1f, 1f, 0, 0, 0x1002, 0
+        )
+        view.dispatchTouchEvent(downEvent)
+        downEvent.recycle()
+
+        // 2. Micro movement (ACTION_MOVE) — looks like a real finger to bot detection
         view.postDelayed({
-            view.dispatchTouchEvent(up)
-            down.recycle()
-            up.recycle()
-        }, duration)
+            val moveCoords = arrayOf(MotionEvent.PointerCoords().apply {
+                this.x = x + Random.nextDouble(-0.8, 0.8).toFloat()
+                this.y = y + Random.nextDouble(-0.8, 0.8).toFloat()
+                pressure = Random.nextDouble(0.50, 0.80).toFloat()
+                size = Random.nextDouble(0.18, 0.32).toFloat()
+            })
+            val moveEvent = MotionEvent.obtain(
+                downTime, downTime + moveDelay, MotionEvent.ACTION_MOVE,
+                1, properties, moveCoords, 0, 0, 1f, 1f, 0, 0, 0x1002, 0
+            )
+            view.dispatchTouchEvent(moveEvent)
+            moveEvent.recycle()
+        }, moveDelay)
+
+        // 3. Finger up (ACTION_UP)
+        view.postDelayed({
+            val upCoords = arrayOf(MotionEvent.PointerCoords().apply {
+                this.x = x + Random.nextDouble(-0.8, 0.8).toFloat()
+                this.y = y + Random.nextDouble(-0.8, 0.8).toFloat()
+                pressure = 0f
+                size = 0f
+            })
+            val upEvent = MotionEvent.obtain(
+                downTime, downTime + upDelay, MotionEvent.ACTION_UP,
+                1, properties, upCoords, 0, 0, 1f, 1f, 0, 0, 0x1002, 0
+            )
+            view.dispatchTouchEvent(upEvent)
+            upEvent.recycle()
+        }, upDelay)
     }
 }
