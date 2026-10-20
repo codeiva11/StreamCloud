@@ -65,6 +65,8 @@ fun buildDefaultClient(context: Context, ignoreSSL: Boolean = false): OkHttpClie
                 8 -> addCanadianShieldDns()
             }
         }
+        // Cloudflare WAF auto-solve via background WebView (use applicationContext to avoid leaks)
+        .addInterceptor(UpgradedCloudflareKiller(context.applicationContext))
         // Needs to be build as otherwise the other builders will change this object
         .build()
     return baseClient
