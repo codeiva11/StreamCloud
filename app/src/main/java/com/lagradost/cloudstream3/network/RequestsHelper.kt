@@ -65,6 +65,10 @@ fun buildDefaultClient(context: Context, ignoreSSL: Boolean = false): OkHttpClie
                 8 -> addCanadianShieldDns()
             }
         }
+        // Bypass bot protections: Cloudflare (via WebView cf_clearance)
+        // and DDoS-Guard (passive, only on 403)
+        .addInterceptor(CloudflareKiller())
+        .addInterceptor(DdosGuardKiller(false))
         // Needs to be build as otherwise the other builders will change this object
         .build()
     return baseClient
