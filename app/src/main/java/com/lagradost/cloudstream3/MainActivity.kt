@@ -1391,7 +1391,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             this@MainActivity,
                             autoDownloadPlugin
                         )
-                    }
+                    }*/
                 }
 
                 ioSafe {
