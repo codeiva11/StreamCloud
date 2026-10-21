@@ -288,7 +288,7 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
                 this.y = y + Random.nextDouble(-0.8, 0.8).toFloat()
                 pressure = 0f
                 size = 0f
-            }
+            })
             val upEvent = MotionEvent.obtain(
                 downTime, downTime + upDelay, MotionEvent.ACTION_UP,
                 1, properties, upCoords, 0, 0, 1f, 1f, 0, 0, 0x1002, 0
