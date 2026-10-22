@@ -140,10 +140,20 @@ object ApkUpdater : AppUpdater {
     override suspend fun installFromFile(
         filePath: String,
         settings: AppSettings,
+        digest: DigestPair?,
         installProgress: (Long, Long?) -> Unit
-    ) {
+    ): Boolean = withContext(Dispatchers.IO) {
         val activity = CommonActivity.activity ?: throw ErrorLoadingException("No activity found")
         val file = File(filePath)
+
+        // Validate the cached file before installing: a stale or corrupt cache
+        // must never be installed. Digests that cannot be verified on this
+        // device do not block the update.
+        if (digest != null && !verifyFileDigest(file, digest)) {
+            file.delete()
+            return@withContext false
+        }
+
         when (settings.updates.apkInstaller.get()) {
             0 -> installWithPackageInstaller(
                 activity = activity,
@@ -155,6 +165,27 @@ object ApkUpdater : AppUpdater {
 
             else -> openApk(activity, file)
         }
+        true
+    }
+
+    /**
+     * Returns true when [file] matches [digest], or when the digest cannot be
+     * verified on this device (a broken OS must not block the update).
+     */
+    private fun verifyFileDigest(file: File, digest: DigestPair): Boolean {
+        val md = try {
+            MessageDigest.getInstance(digest.algorithm)
+        } catch (_: Exception) {
+            return true
+        }
+        file.inputStream().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var read: Int
+            while (input.read(buffer).also { read = it } >= 0) {
+                md.update(buffer, 0, read)
+            }
+        }
+        return md.digest().contentEquals(digest.digest)
     }
 
     /** https://medium.com/@solrudev/painless-building-of-an-android-package-installer-app-d5a09b5df432 */
