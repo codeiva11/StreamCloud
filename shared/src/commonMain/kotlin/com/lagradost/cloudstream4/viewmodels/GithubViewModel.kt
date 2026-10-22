@@ -89,13 +89,16 @@ interface AppUpdater {
 
     /**
      * Installs an update from a previously cached apk file.
+     * Returns true when the install was started, false when the cached file
+     * failed digest validation (it is deleted so a fresh download can follow).
      */
     @Throws
     suspend fun installFromFile(
         filePath: String,
         settings: AppSettings,
+        digest: DigestPair?,
         installProgress: (Long, Long?) -> Unit,
-    )
+    ): Boolean
 
     /**
      * Returns the absolute path of the cached update apk for the given version,
@@ -259,13 +262,17 @@ class GithubViewModel(
     }
 
     private suspend fun installUpdate(file: GithubFile) = dispatchUpdate {
+        val digest = DigestPair.parse(file.digest)
         val cachedPath = updater.getCachedUpdatePath(file.tagName)
 
-        if (cachedPath != null) {
+        // Install from the pre-downloaded cache when it exists and passes digest
+        // validation; otherwise download the update fresh.
+        val installedFromCache = if (cachedPath != null) {
             // APK was pre-downloaded in the background, install straight from cache
             updater.installFromFile(
                 filePath = cachedPath,
                 settings = settings,
+                digest = digest,
             ) { progress, total ->
                 updateState {
                     copy(
@@ -279,10 +286,14 @@ class GithubViewModel(
                 }
             }
         } else {
+            false
+        }
+
+        if (!installedFromCache) {
             updater.update(
                 settings = settings,
                 url = file.downloadUrl,
-                digest = DigestPair.parse(file.digest),
+                digest = digest,
             ) { progress, total ->
                 updateState {
                     copy(
@@ -365,6 +376,11 @@ class GithubViewModel(
         // Automated check found an update: fetch the apk quietly now so that
         // tapping "Update" later installs instantly without waiting on a download.
         if (!fromUser) {
+            if (prerelease) {
+                // The pre-release tag is floating: a cached apk under this tag may
+                // belong to an older commit, so drop it before re-downloading.
+                updater.deleteCachedUpdate(release.tagName)
+            }
             updater.downloadSilently(
                 url = release.downloadUrl,
                 versionTag = release.tagName,
