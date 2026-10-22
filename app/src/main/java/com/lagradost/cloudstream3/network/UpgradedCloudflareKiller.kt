@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.webkit.CookieManager
@@ -42,7 +43,11 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
         // After a failed solve, fail fast for a while instead of re-solving on every request.
         private val failedUntil = ConcurrentHashMap<String, Long>()
         private const val FAIL_COOLDOWN_MS = 45_000L
-        private const val SOLVE_TIMEOUT_MS = 20_000L
+        // 60s: WebView cold start + slow mobile network + challenge JS need room.
+        // The wait ends the moment cf_clearance appears, so a longer cap costs
+        // nothing when the solve is fast.
+        private const val SOLVE_TIMEOUT_MS = 60_000L
+        private const val TAG = "CFKiller"
 
         fun hostLock(host: String): Mutex = hostLocks.getOrPut(host) { Mutex() }
 
@@ -60,36 +65,61 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
-        val host = originalRequest.url.host
+        val originalHost = originalRequest.url.host
 
-        val requestToUse = attachSavedClearance(originalRequest, host)
+        val requestToUse = attachSavedClearance(originalRequest, originalHost)
         val response = chain.proceed(requestToUse)
 
         if (!isCloudflareChallenge(response)) {
             return response
         }
 
+        // The challenge often comes from a DIFFERENT host than the one that was
+        // requested: redirect chains (e.g. dl.fastdlserver.site -> gdflix.dev ->
+        // new6.gdflix.io) end on the walled host. response.request is the final
+        // request after all redirects, so the WebView solve and the cf_clearance
+        // cookie polling MUST target that final URL/host. Solving the original
+        // URL polls the wrong domain's cookies and can never succeed.
+        val finalRequest = response.request
+        val finalUrl = finalRequest.url
+        val finalHost = finalUrl.host
+        Log.d(TAG, "Challenge detected: requested=$originalHost final=$finalHost code=${response.code}")
+
         // In post-failure cooldown: return the original response fast, do not re-solve.
         val now = System.currentTimeMillis()
-        if ((failedUntil[host] ?: 0L) > now) {
+        if ((failedUntil[finalHost] ?: 0L) > now || (failedUntil[originalHost] ?: 0L) > now) {
+            Log.d(TAG, "In fail-cooldown for $finalHost, returning response unsolved")
             return response
         }
 
         response.close()
         val solved = runBlocking {
-            hostLock(host).withLock {
+            hostLock(finalHost).withLock {
                 // A concurrent request may already have solved this host.
-                if (savedCookies[host]?.contains("cf_clearance=") == true) {
+                if (savedCookies[finalHost]?.contains("cf_clearance=") == true) {
+                    Log.d(TAG, "Clearance already saved for $finalHost, reusing")
                     true
                 } else {
-                    solveWafInWebView(originalRequest.url.toString(), host)
+                    solveWafInWebView(finalUrl.toString(), finalHost)
                 }
             }
         }
         return if (solved) {
-            chain.proceed(attachSavedClearance(originalRequest, host))
+            val retry = chain.proceed(attachSavedClearance(finalRequest, finalHost))
+            if (isCloudflareChallenge(retry)) {
+                // The clearance is being rejected — drop it so the next request
+                // solves fresh instead of reusing a poisoned cookie forever.
+                Log.w(TAG, "Retry still challenged for $finalHost, dropping saved clearance")
+                savedCookies.remove(finalHost)
+                val until = System.currentTimeMillis() + FAIL_COOLDOWN_MS
+                failedUntil[finalHost] = until
+                failedUntil[originalHost] = until
+            }
+            retry
         } else {
-            failedUntil[host] = System.currentTimeMillis() + FAIL_COOLDOWN_MS
+            val until = System.currentTimeMillis() + FAIL_COOLDOWN_MS
+            failedUntil[finalHost] = until
+            failedUntil[originalHost] = until
             // The original response was closed; fetch a fresh one for the caller.
             chain.proceed(requestToUse)
         }
@@ -137,6 +167,11 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
                 View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
             )
             webView.layout(0, 0, 1080, 1920)
+            // A freshly created WebView starts paused: JS timers (which the
+            // challenge relies on) may not run until it is resumed.
+            webView.onResume()
+            webView.resumeTimers()
+            Log.d(TAG, "Solve start: host=$host url=$url")
 
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
@@ -170,15 +205,24 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
                 }
             }
 
+            val solveStartMs = System.currentTimeMillis()
+            var pollCount = 0
             val checkAndClickLoop = object : Runnable {
                 override fun run() {
                     if (deferred.isCompleted) return
+                    pollCount++
 
                     val currentCookies = cookieManager.getCookie(url).orEmpty()
                     if (currentCookies.contains("cf_clearance=")) {
                         savedCookies[host] = currentCookies
+                        cookieManager.flush()
+                        Log.d(TAG, "Solve SUCCESS for $host in ${System.currentTimeMillis() - solveStartMs}ms")
                         deferred.complete(true)
                         return
+                    }
+
+                    if (pollCount % 7 == 0) {
+                        Log.d(TAG, "Solve polling $host: ${System.currentTimeMillis() - solveStartMs}ms, page=${webView.url}")
                     }
 
                     val jsFindBox = """
@@ -217,22 +261,28 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
                         } catch (_: Exception) {}
                     }
 
-                    handler.postDelayed(this, 2500)
+                    handler.postDelayed(this, 1500)
                 }
             }
 
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, loadedUrl: String?) {
                     super.onPageFinished(view, loadedUrl)
-                    handler.postDelayed(checkAndClickLoop, 2000)
+                    Log.d(TAG, "Solve page finished for $host: $loadedUrl")
                 }
             }
 
             webView.loadUrl(url)
+            // Start polling immediately — do not wait for onPageFinished, the
+            // challenge may complete (or stall) before it ever fires.
+            handler.post(checkAndClickLoop)
 
             val success = withTimeoutOrNull(SOLVE_TIMEOUT_MS) {
                 deferred.await()
             } ?: false
+            if (!success) {
+                Log.w(TAG, "Solve FAILED for $host after ${System.currentTimeMillis() - solveStartMs}ms, last page=${webView.url}")
+            }
 
             handler.removeCallbacksAndMessages(null)
             webView.stopLoading()
