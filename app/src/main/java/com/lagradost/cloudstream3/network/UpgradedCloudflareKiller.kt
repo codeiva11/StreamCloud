@@ -13,6 +13,8 @@ import android.webkit.JsPromptResult
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import kotlinx.coroutines.CompletableDeferred
@@ -21,7 +23,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
@@ -43,10 +44,6 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
         // After a failed solve, fail fast for a while instead of re-solving on every request.
         private val failedUntil = ConcurrentHashMap<String, Long>()
         private const val FAIL_COOLDOWN_MS = 45_000L
-        // 60s: WebView cold start + slow mobile network + challenge JS need room.
-        // The wait ends the moment cf_clearance appears, so a longer cap costs
-        // nothing when the solve is fast.
-        private const val SOLVE_TIMEOUT_MS = 60_000L
         private const val TAG = "CFKiller"
 
         fun hostLock(host: String): Mutex = hostLocks.getOrPut(host) { Mutex() }
@@ -207,6 +204,7 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
 
             val solveStartMs = System.currentTimeMillis()
             var pollCount = 0
+            var pageFinished = false
             val checkAndClickLoop = object : Runnable {
                 override fun run() {
                     if (deferred.isCompleted) return
@@ -216,9 +214,42 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
                     if (currentCookies.contains("cf_clearance=")) {
                         savedCookies[host] = currentCookies
                         cookieManager.flush()
-                        Log.d(TAG, "Solve SUCCESS for $host in ${System.currentTimeMillis() - solveStartMs}ms")
+                        Log.d(TAG, "Solve SUCCESS (cf_clearance) for $host in ${System.currentTimeMillis() - solveStartMs}ms")
                         deferred.complete(true)
                         return
+                    }
+
+                    // AUTOMATIC success detection: if a page finished loading and
+                    // it is no longer a challenge page, the wall is passed even
+                    // when the site did not set a cf_clearance cookie. Keep
+                    // whatever cookies the host set and retry with them.
+                    if (pageFinished) {
+                        val jsChallengeCheck = """
+                            (function() {
+                                var t = document.title || '';
+                                var b = document.body ? document.body.innerHTML : '';
+                                var chal = t.indexOf('Just a moment') >= 0 ||
+                                    t.indexOf('Attention Required') >= 0 ||
+                                    b.indexOf('cf-turnstile') >= 0 ||
+                                    b.indexOf('challenges.cloudflare.com') >= 0 ||
+                                    b.indexOf('_cf_chl') >= 0;
+                                return JSON.stringify({ chal: chal });
+                            })();
+                        """.trimIndent()
+                        webView.evaluateJavascript(jsChallengeCheck) { result ->
+                            try {
+                                val clean = result?.removeSurrounding("\"")?.replace("\\\"", "\"")
+                                if (!clean.isNullOrEmpty()) {
+                                    val json = JSONObject(clean)
+                                    if (!json.optBoolean("chal", true) && !deferred.isCompleted) {
+                                        savedCookies[host] = cookieManager.getCookie(url).orEmpty()
+                                        cookieManager.flush()
+                                        Log.d(TAG, "Solve SUCCESS (challenge page gone) for $host in ${System.currentTimeMillis() - solveStartMs}ms")
+                                        deferred.complete(true)
+                                    }
+                                }
+                            } catch (_: Exception) {}
+                        }
                     }
 
                     if (pollCount % 7 == 0) {
@@ -268,7 +299,22 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, loadedUrl: String?) {
                     super.onPageFinished(view, loadedUrl)
+                    pageFinished = true
                     Log.d(TAG, "Solve page finished for $host: $loadedUrl")
+                }
+
+                override fun onReceivedError(
+                    view: WebView?,
+                    request: WebResourceRequest?,
+                    error: WebResourceError?
+                ) {
+                    super.onReceivedError(view, request, error)
+                    // A hard main-frame load error is a definitive event: end
+                    // the wait instead of polling a dead page forever.
+                    if (request?.isForMainFrame == true && !deferred.isCompleted) {
+                        Log.w(TAG, "Solve page ERROR for $host: ${error?.description} (code ${error?.errorCode})")
+                        deferred.complete(false)
+                    }
                 }
             }
 
@@ -277,12 +323,12 @@ class UpgradedCloudflareKiller(context: Context) : Interceptor {
             // challenge may complete (or stall) before it ever fires.
             handler.post(checkAndClickLoop)
 
-            val success = withTimeoutOrNull(SOLVE_TIMEOUT_MS) {
-                deferred.await()
-            } ?: false
-            if (!success) {
-                Log.w(TAG, "Solve FAILED for $host after ${System.currentTimeMillis() - solveStartMs}ms, last page=${webView.url}")
-            }
+            // AUTOMATIC: no fixed timeout on the solve. The wait ends only when
+            // the challenge is actually solved (cf_clearance set / challenge
+            // page replaced by real content) or the page load fails outright —
+            // never because a guessed number of seconds ran out.
+            val success = deferred.await()
+            Log.d(TAG, "Solve finished for $host: success=$success after ${System.currentTimeMillis() - solveStartMs}ms")
 
             handler.removeCallbacksAndMessages(null)
             webView.stopLoading()
