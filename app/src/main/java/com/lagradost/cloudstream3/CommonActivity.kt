@@ -356,6 +356,7 @@ object CommonActivity {
                 "Dracula" -> R.style.DraculaMode
                 "Lavender" -> R.style.LavenderMode
                 "SilentBlue" -> R.style.SilentBlueMode
+                "GlassBlue" -> R.style.GlassBlueMode
 
                 else -> R.style.AppTheme
             }

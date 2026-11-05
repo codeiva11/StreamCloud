@@ -96,6 +96,15 @@
     <color name="SilentBlueGrayTextColor">#7B83B0</color>
     <color name="SilentBlueIconColor">#7B83B0</color>
 
+    <!--Dark Glass Blue Theme-->
+    <color name="GlassBluePrimaryGrayBackground">#1B3A6E</color>
+    <color name="GlassBlueBitDarkerGrayBackground">#0A1B3D</color>
+    <color name="GlassBlueGrayBackground">#12295A</color>
+    <color name="GlassBlueItemBackground">#14305F</color>
+    <color name="GlassBlueTextColor">#E8EEFB</color>
+    <color name="GlassBlueGrayTextColor">#9DB4E8</color>
+    <color name="GlassBlueIconColor">#9DB4E8</color>
+
     <!--Other Colors -->
     <color name="colorPrimaryBlue">#5664B7</color>
     <color name="colorPrimaryRed">#D50000</color>

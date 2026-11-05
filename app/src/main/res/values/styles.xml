@@ -210,6 +210,18 @@
         <item name="colorOnPrimary">@color/SilentBlueTextColor</item>
     </style>
 
+    <style name="GlassBlueMode">
+        <item name="primaryGrayBackground">@color/GlassBluePrimaryGrayBackground</item>
+        <item name="primaryBlackBackground">@color/GlassBlueBitDarkerGrayBackground</item>
+        <item name="iconGrayBackground">@color/GlassBlueGrayBackground</item>
+        <item name="boxItemBackground">@color/GlassBlueItemBackground</item>
+        <item name="textColor">@color/GlassBlueTextColor</item>
+        <item name="iconColor">@color/GlassBlueIconColor</item>
+        <item name="white">@color/GlassBlueTextColor</item>
+        <item name="black">@color/GlassBluePrimaryGrayBackground</item>
+        <item name="colorOnPrimary">@color/GlassBlueTextColor</item>
+    </style>
+
     <style name="LavenderMode">
         <item name="primaryGrayBackground">@color/LavenderPrimaryGrayBackground</item>
         <item name="primaryBlackBackground">@color/LavenderBitDarkerGrayBackground</item>
