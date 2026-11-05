@@ -1196,6 +1196,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         MainAPI.settingsForProvider = settingsForProvider
 
+        // One-time migration: make Dark Glass Blue the default theme,
+        // including for existing installs. Runs once after this update;
+        // afterwards the user's own theme choice is respected.
+        if (!settingsManager.getBoolean("glassblue_default_migrated", false)) {
+            settingsManager.edit {
+                putString(getString(R.string.app_theme_key), "GlassBlue")
+                putBoolean("glassblue_default_migrated", true)
+            }
+        }
+
         loadThemes(this)
         enableEdgeToEdgeCompat()
         setNavigationBarColorCompat(R.attr.primaryGrayBackground)

@@ -64,7 +64,7 @@ fun perfToColor(perf : String?) = when (perf) {
 
 fun Context.loadThemeMode(): CloudStreamThemeMode {
     val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-    return perfToMode(prefs.getString("theme_key", "AmoledLight"))
+    return perfToMode(prefs.getString("theme_key", "GlassBlue"))
 }
 
 fun Context.loadPrimaryColor(): CloudStreamPrimaryColor {
