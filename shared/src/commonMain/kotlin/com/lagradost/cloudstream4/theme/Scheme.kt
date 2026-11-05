@@ -160,3 +160,16 @@ internal fun silentBlueScheme() = CloudStreamColorScheme(
     ongoing = CloudStreamPalette.Ongoing,
     isLight = false,
 )
+
+internal fun glassBlueScheme() = CloudStreamColorScheme(
+    background = CloudStreamPalette.GlassBlueBlackBg,
+    surfaceVariant = CloudStreamPalette.GlassBluePrimaryGrayBg,
+    surface = CloudStreamPalette.GlassBlueIconGrayBg,
+    surfaceContainer = CloudStreamPalette.GlassBlueBoxItemBg,
+    onBackground = CloudStreamPalette.GlassBlueText,
+    onSurfaceVariant = CloudStreamPalette.GlassBlueGrayText,
+    icon = CloudStreamPalette.GlassBlueIcon,
+    primary = CloudStreamPalette.Primary,
+    ongoing = CloudStreamPalette.Ongoing,
+    isLight = false,
+)

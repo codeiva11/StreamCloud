@@ -81,4 +81,14 @@ internal object CloudStreamPalette {
     val SilentBlueText = Color(0xFFE0E1F3)
     val SilentBlueGrayText = Color(0xFF7B83B0)
     val SilentBlueIcon = Color(0xFF7B83B0)
+
+    // Dark Glass Blue — deep blue glass, opaque (no alpha); the background
+    // must read as blue on every panel, never grey.
+    val GlassBluePrimaryGrayBg = Color(0xFF1B3A6E)
+    val GlassBlueBlackBg = Color(0xFF0A1B3D)
+    val GlassBlueIconGrayBg = Color(0xFF12295A)
+    val GlassBlueBoxItemBg = Color(0xFF14305F)
+    val GlassBlueText = Color(0xFFE8EEFB)
+    val GlassBlueGrayText = Color(0xFF9DB4E8)
+    val GlassBlueIcon = Color(0xFF9DB4E8)
 }
