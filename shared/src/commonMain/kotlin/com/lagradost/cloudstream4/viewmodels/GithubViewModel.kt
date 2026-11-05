@@ -324,8 +324,13 @@ class GithubViewModel(
             state = GithubUpdateDialogState.Loading
         )
 
-        updateState {
-            copy(dialog = baseDialog)
+        // Manual checks show the Loading dialog while searching, the user asked
+        // for feedback. Automatic checks stay fully silent until an update is
+        // found AND its apk is downloaded and ready, so no popup appears first.
+        if (fromUser) {
+            updateState {
+                copy(dialog = baseDialog)
+            }
         }
 
         // If on pre-release check if the sha matches, as we do not look at the version
@@ -373,8 +378,9 @@ class GithubViewModel(
             return@dispatchUpdate
         }
 
-        // Automated check found an update: fetch the apk quietly now so that
-        // tapping "Update" later installs instantly without waiting on a download.
+        // Automated check found an update: fetch the apk quietly FIRST, and only
+        // show the dialog once the download is ready (or failed — tapping
+        // "Update" then downloads fresh, so an update is never blocked).
         if (!fromUser) {
             if (prerelease) {
                 // The pre-release tag is floating: a cached apk under this tag may

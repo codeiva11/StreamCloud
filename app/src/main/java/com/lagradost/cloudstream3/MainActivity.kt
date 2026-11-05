@@ -157,7 +157,6 @@ import com.lagradost.cloudstream3.utils.DataStoreHelper.accounts
 import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
-import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SnackbarHelper.showSnackbar
 import com.lagradost.cloudstream3.utils.TvChannelUtils
@@ -1989,10 +1988,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         handleAppIntent(intent)
-
-        //ioSafe {
-        //    runAutoUpdate()
-        //}
 
         FcastManager().init(this, false)
 
