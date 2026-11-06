@@ -18,7 +18,7 @@ https://developer.android.com/design/ui/tv/samples/jet-fit
     style="@style/DarkFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/primaryBlackBackground">
+    android:background="@android:color/transparent">
 
     <FrameLayout
         android:id="@+id/background_poster_holder"

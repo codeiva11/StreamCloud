@@ -25,7 +25,7 @@
         <com.lagradost.cloudstream3.ui.AutofitRecyclerView
                 android:descendantFocusability="afterDescendants"
 
-                android:background="?attr/primaryBlackBackground"
+                android:background="@android:color/transparent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:clipToPadding="false"

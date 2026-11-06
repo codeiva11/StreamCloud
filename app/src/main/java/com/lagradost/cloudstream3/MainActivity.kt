@@ -211,7 +211,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
          * bottom-nav screens plus the download child/queue screens, whose
          * layouts are transparent, plus the settings sub-screens (their
          * PreferenceScaffold is fully transparent like the main Settings
-         * screen). Every other destination hides it. */
+         * screen), plus the result screens (their details backgrounds
+         * are fully transparent). Every other destination hides it. */
         val BACKDROP_DESTINATIONS = setOf(
             R.id.navigation_home,
             R.id.navigation_search,
@@ -226,6 +227,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             R.id.navigation_settings_providers,
             R.id.navigation_download_child,
             R.id.navigation_download_queue,
+            R.id.navigation_results_phone,
+            R.id.navigation_results_tv,
         )
         const val ANIMATED_OUTLINE: Boolean = false
         var lastError: String? = null
@@ -549,9 +552,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         ).contains(destination.id)
 
         // Blurred hero backdrop (Option 2, extended): show the shared cached
-        // bitmap on the main screens and the (transparent) settings
-        // sub-screens; hide it everywhere else (player, results) so they
-        // keep their plain background.
+        // bitmap on the main screens, the (transparent) settings
+        // sub-screens and the result screens; hide it everywhere else
+        // (player) so it keeps its plain black background.
         if (BACKDROP_DESTINATIONS.contains(destination.id)) {
             HomeBackdropBlur.applyCachedToActivity(this)
         } else {
