@@ -206,6 +206,7 @@
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/home_api_fab"
         style="@style/ExtendedFloatingActionButton"
+        app:backgroundTint="#B3000000"
         android:text="@string/home_source"
         android:textColor="?attr/textColor"
         android:visibility="gone"
