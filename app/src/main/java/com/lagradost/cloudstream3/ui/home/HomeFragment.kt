@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -642,10 +641,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
     private var bottomSheetDialog: BottomSheetDialog? = null
     private var homeMasterAdapter: HomeParentItemAdapterPreview? = null
 
-    // Blurred hero backdrop (Option 2): cached bitmap for the current hero item.
-    private var currentBackdropUrl: String? = null
-    private var currentBackdropBitmap: Bitmap? = null
-
     var lastSavedHomepage: String? = null
 
     fun saveHomepageToTV(page: Map<String, HomeViewModel.ExpandableHomepageList>) {
@@ -669,46 +664,39 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
     }
 
     /**
-     * Updates the blurred hero backdrop behind the home list (Option 2).
-     * The backdrop shows the current hero item's image, blurred once and
-     * cached; it is never re-blurred on scroll. Falls back to the plain
-     * black background when there is no hero image.
+     * Updates the blurred hero backdrop (Option 2, extended to the activity
+     * level): the backdrop shows the current hero item's image, blurred once
+     * and cached in HomeBackdropBlur; every main screen reuses that same
+     * cached bitmap. Falls back to the plain black background when there is
+     * no hero image.
      */
     private fun updateHomeBackdrop(item: LoadResponse?) {
         val appContext = context?.applicationContext ?: return
         val url = item?.backgroundPosterUrl ?: item?.posterUrl
         if (url.isNullOrBlank()) {
-            currentBackdropUrl = null
-            currentBackdropBitmap = null
-            binding?.homeBackdrop?.isGone = true
-            binding?.homeBackdropScrim?.isGone = true
+            HomeBackdropBlur.cachedUrl = null
+            HomeBackdropBlur.cachedBitmap = null
+            HomeBackdropBlur.hideInActivity(activity)
             return
         }
-        if (url == currentBackdropUrl && currentBackdropBitmap != null) {
-            binding?.homeBackdrop?.isVisible = true
-            binding?.homeBackdropScrim?.isVisible = true
+        if (url == HomeBackdropBlur.cachedUrl && HomeBackdropBlur.cachedBitmap != null) {
+            HomeBackdropBlur.applyCachedToActivity(activity)
             return
         }
-        currentBackdropUrl = url
+        HomeBackdropBlur.cachedUrl = url
         ioSafe {
             val bitmap = HomeBackdropBlur.loadBlurredBitmap(
                 appContext, url, item?.posterHeaders
             )
             withContext(Dispatchers.Main) {
                 // Only apply if this hero is still the current one.
-                if (url == currentBackdropUrl) {
-                    val binding = binding
-                    if (binding != null) {
-                        if (bitmap == null) {
-                            currentBackdropBitmap = null
-                            binding.homeBackdrop.isGone = true
-                            binding.homeBackdropScrim.isGone = true
-                        } else {
-                            currentBackdropBitmap = bitmap
-                            binding.homeBackdrop.setImageBitmap(bitmap)
-                            binding.homeBackdrop.isVisible = true
-                            binding.homeBackdropScrim.isVisible = true
-                        }
+                if (url == HomeBackdropBlur.cachedUrl) {
+                    if (bitmap == null) {
+                        HomeBackdropBlur.cachedBitmap = null
+                        HomeBackdropBlur.hideInActivity(activity)
+                    } else {
+                        HomeBackdropBlur.cachedBitmap = bitmap
+                        HomeBackdropBlur.applyCachedToActivity(activity)
                     }
                 }
             }

@@ -202,7 +202,7 @@ object SettingsFragmentScreen : Screen {
             }
         }
 
-        Scaffold { _ ->
+        Scaffold(containerColor = Color.Transparent) { _ ->
             Column(modifier = Modifier.verticalScroll(outerListState)) {
                 Spacer(modifier = Modifier.height(MaterialTheme.padding.small))
 

@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/library_root"
-    android:background="?attr/primaryGrayBackground"
+    android:background="@android:color/transparent"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -22,7 +22,7 @@
         android:id="@+id/search_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/primaryGrayBackground">
+        android:background="@android:color/transparent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -110,7 +110,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:animateLayoutChanges="true"
-        android:background="?attr/primaryBlackBackground"
+        android:background="@android:color/transparent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <androidx.viewpager2.widget.ViewPager2
@@ -125,7 +125,7 @@
             android:id="@+id/library_loading_overlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="?attr/primaryBlackBackground"
+            android:background="@android:color/transparent"
             android:visibility="gone"
             tools:visibility="visible">
 
@@ -194,7 +194,7 @@
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:layout_gravity="bottom"
-        android:background="?attr/primaryGrayBackground"
+        android:background="@android:color/transparent"
         android:focusable="true"
         android:paddingHorizontal="5dp"
         app:layout_scrollFlags="noScroll"

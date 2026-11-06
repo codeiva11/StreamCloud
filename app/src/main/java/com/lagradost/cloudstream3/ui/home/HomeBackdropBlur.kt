@@ -1,7 +1,12 @@
 package com.lagradost.cloudstream3.ui.home
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import android.view.View
+import android.widget.ImageView
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import coil3.BitmapImage
 import coil3.DrawableImage
 import coil3.SingletonImageLoader
@@ -10,6 +15,7 @@ import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
+import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.utils.drawableToBitmap
 import kotlin.math.abs
@@ -31,6 +37,47 @@ object HomeBackdropBlur {
 
     /** Stack blur radius applied to the downscaled bitmap. */
     private const val BLUR_RADIUS = 10
+
+    /**
+     * Shared cache: the blurred bitmap of the current hero item, written by
+     * HomeFragment once per hero change and read by every main screen.
+     * The bitmap is never re-loaded or re-blurred per screen; screens that
+     * open before Home has loaded a hero simply see no backdrop (plain
+     * black) until the cache is filled.
+     */
+    @Volatile
+    var cachedUrl: String? = null
+
+    @Volatile
+    var cachedBitmap: Bitmap? = null
+
+    /**
+     * Shows the cached blurred bitmap in the activity-level backdrop views
+     * (activity_backdrop + activity_backdrop_scrim), or hides them when no
+     * bitmap is cached yet. Never crashes when the views are absent.
+     * Must be called on the main thread.
+     */
+    fun applyCachedToActivity(activity: Activity?) {
+        val backdrop = activity?.findViewById<ImageView>(R.id.activity_backdrop) ?: return
+        val scrim = activity.findViewById<View>(R.id.activity_backdrop_scrim) ?: return
+        val bitmap = cachedBitmap
+        if (bitmap != null) {
+            backdrop.setImageBitmap(bitmap)
+            backdrop.isVisible = true
+            scrim.isVisible = true
+        } else {
+            backdrop.isGone = true
+            scrim.isGone = true
+        }
+    }
+
+    /** Hides the activity-level backdrop views. Never crashes when absent. */
+    fun hideInActivity(activity: Activity?) {
+        val backdrop = activity?.findViewById<ImageView>(R.id.activity_backdrop) ?: return
+        val scrim = activity.findViewById<View>(R.id.activity_backdrop_scrim) ?: return
+        backdrop.isGone = true
+        scrim.isGone = true
+    }
 
     /**
      * Loads [url] and returns a blurred copy, or null when the image cannot

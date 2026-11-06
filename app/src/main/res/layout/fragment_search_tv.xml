@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginTop="@dimen/navbar_height"
-    android:background="?attr/primaryGrayBackground"
+    android:background="@android:color/transparent"
     tools:context=".ui.search.SearchFragment">
 
     <LinearLayout
@@ -20,7 +20,7 @@
         android:layout_marginStart="@dimen/navbar_width"
         android:orientation="vertical"
         android:paddingBottom="10dp"
-        android:background="?attr/primaryGrayBackground">
+        android:background="@android:color/transparent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -125,7 +125,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginStart="@dimen/navbar_width"
-        android:background="?attr/primaryBlackBackground"
+        android:background="@android:color/transparent"
         android:clipToPadding="false"
         android:descendantFocusability="afterDescendants"
         android:nextFocusLeft="@id/navigation_search"
@@ -142,7 +142,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
 
-        android:background="?attr/primaryBlackBackground"
+        android:background="@android:color/transparent"
         android:descendantFocusability="afterDescendants"
         android:nextFocusLeft="@id/navigation_search"
         android:nextFocusUp="@id/tvtypes_chips"
@@ -154,7 +154,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginStart="@dimen/navbar_width"
-        android:background="?attr/primaryBlackBackground"
+        android:background="@android:color/transparent"
         android:descendantFocusability="afterDescendants"
         android:nextFocusLeft="@id/navigation_search"
         android:nextFocusUp="@id/tvtypes_chips"

@@ -12,6 +12,32 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <!-- Blurred hero backdrop (Option 2, extended): shared activity-level
+             backdrop behind the fragment container and the navigation bars.
+             The nav bar / rail is translucent so the blur shows through it. -->
+        <ImageView
+            android:id="@+id/activity_backdrop"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:contentDescription="@null"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/activity_backdrop_scrim"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/home_backdrop_scrim"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <com.google.android.material.navigationrail.NavigationRailView
             android:id="@+id/nav_rail_view"
             android:layout_width="@dimen/nav_rail_view_width"

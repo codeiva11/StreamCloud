@@ -105,6 +105,7 @@ import com.lagradost.cloudstream3.ui.SyncWatchType
 import com.lagradost.cloudstream3.ui.WatchType
 import com.lagradost.cloudstream3.ui.account.AccountHelper.showAccountSelectLinear
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
+import com.lagradost.cloudstream3.ui.home.HomeBackdropBlur
 import com.lagradost.cloudstream3.ui.home.HomeViewModel
 import com.lagradost.cloudstream3.ui.library.LibraryViewModel
 import com.lagradost.cloudstream3.ui.player.BasicLink
@@ -200,6 +201,24 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         var activityResultLauncher: ActivityResultLauncher<Intent>? = null
 
         const val TAG = "MAINACT"
+
+        /** Alpha of the bottom nav bar / rail background (170/255, ~67%
+         * opaque): translucent so the blurred hero backdrop shows through,
+         * while the icons and labels stay readable. */
+        const val NAV_BAR_ALPHA = 170
+
+        /** Destinations where the blurred hero backdrop is shown: the five
+         * bottom-nav screens plus the download child/queue screens, whose
+         * layouts are transparent. Every other destination hides it. */
+        val BACKDROP_DESTINATIONS = setOf(
+            R.id.navigation_home,
+            R.id.navigation_search,
+            R.id.navigation_library,
+            R.id.navigation_downloads,
+            R.id.navigation_settings,
+            R.id.navigation_download_child,
+            R.id.navigation_download_queue,
+        )
         const val ANIMATED_OUTLINE: Boolean = false
         var lastError: String? = null
 
@@ -521,6 +540,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             R.id.navigation_test_providers,
         ).contains(destination.id)
 
+        // Blurred hero backdrop (Option 2, extended): show the shared cached
+        // bitmap on the main screens; hide it everywhere else (player,
+        // results, settings sub-screens) so they keep their plain background.
+        if (BACKDROP_DESTINATIONS.contains(destination.id)) {
+            HomeBackdropBlur.applyCachedToActivity(this)
+        } else {
+            HomeBackdropBlur.hideInActivity(this)
+        }
 
         /*val dontPush = listOf(
             R.id.navigation_home,
@@ -1723,6 +1750,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         binding?.navView?.apply {
             itemRippleColor = rippleColor
             itemActiveIndicatorColor = rippleColor
+            // Translucent nav bar so the blurred backdrop shows through it.
+            background?.mutate()?.alpha = NAV_BAR_ALPHA
             setupWithNavController(navController)
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
@@ -1746,11 +1775,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            /*if (isLayout(TV or EMULATOR)) {
-                background?.alpha = 200
-            } else {
-                background?.alpha = 255
-            }*/
+            // Translucent nav rail so the blurred backdrop shows through it.
+            background?.mutate()?.alpha = NAV_BAR_ALPHA
 
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
