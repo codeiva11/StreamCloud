@@ -202,10 +202,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         const val TAG = "MAINACT"
 
-        /** Alpha of the bottom nav bar / rail background (170/255, ~67%
-         * opaque): translucent so the blurred hero backdrop shows through,
-         * while the icons and labels stay readable. */
-        const val NAV_BAR_ALPHA = 170
+        // The bottom nav bar / rail is fully transparent (background +
+        // elevation set in activity_main.xml / activity_main_tv.xml) so the
+        // blurred hero backdrop shows through it; the selected-item pill
+        // and icons stay as they are.
 
         /** Destinations where the blurred hero backdrop is shown: the five
          * bottom-nav screens plus the download child/queue screens, whose
@@ -1750,8 +1750,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         binding?.navView?.apply {
             itemRippleColor = rippleColor
             itemActiveIndicatorColor = rippleColor
-            // Translucent nav bar so the blurred backdrop shows through it.
-            background?.mutate()?.alpha = NAV_BAR_ALPHA
+            // Fully transparent background (XML) so the blurred backdrop
+            // shows through the nav bar.
             setupWithNavController(navController)
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
@@ -1775,8 +1775,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            // Translucent nav rail so the blurred backdrop shows through it.
-            background?.mutate()?.alpha = NAV_BAR_ALPHA
+            // Fully transparent background (XML) so the blurred backdrop
+            // shows through the nav rail.
 
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
