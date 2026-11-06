@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TV home header pill: 70% black transparent, same as the nav bar and the
-     HDHub4U chip. The old player_button_tv_attr was white at 20% (grey) at
-     rest and full white when focused. -->
+<!-- TV home header pill: fully transparent, like the Settings search bar
+     and the phone HDHub4U chip. White text/icons sit directly on the blurred
+     backdrop; D-pad focus is still shown by home_header_item_tv (blue). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#B3000000" />
+    <solid android:color="@android:color/transparent" />
     <corners android:radius="@dimen/rounded_image_radius" />
 </shape>
