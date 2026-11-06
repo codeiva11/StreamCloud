@@ -352,12 +352,12 @@ object SettingsFragmentScreen : Screen {
             },
             shape = CircleShape,
             colors = TextFieldDefaults.colors(
-                // 50% black transparent — lighter than the nav bar and the
-                // HDHub4U chip (70%), because the wide pill still read too
-                // black over the bright hero blur at 70%.
-                focusedContainerColor = Color(0x80000000),
-                unfocusedContainerColor = Color(0x80000000),
-                disabledContainerColor = Color(0x80000000),
+                // Fully transparent — no pill background at all, like the
+                // other Settings rows (General, Player, Layout, ...): the
+                // blurred backdrop shows straight through behind the text.
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
                 focusedTextColor = MaterialTheme.colorScheme.onBackground,
                 unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
                 disabledTextColor = MaterialTheme.colorScheme.onBackground,
