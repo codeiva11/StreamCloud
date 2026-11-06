@@ -14,8 +14,9 @@
 
         <!-- Blurred hero backdrop (Option 2, extended): shared activity-level
              backdrop behind the fragment container and the navigation bars.
-             The nav bar / rail is fully transparent (background + elevation in
-             XML) so the blur shows through it. The scrim ends at the top of
+             The nav bar / rail has a semi-transparent dark tint (#80000000,
+             50% black, in XML) so the blur shows through it subtly and the
+             icons stay readable on any hero. The scrim ends at the top of
              the nav bar, so it never darkens the strip behind it. -->
         <ImageView
             android:id="@+id/activity_backdrop"
@@ -44,7 +45,7 @@
             android:id="@+id/nav_rail_view"
             android:layout_width="@dimen/nav_rail_view_width"
             android:layout_height="match_parent"
-            android:background="@android:color/transparent"
+            android:background="#80000000"
             android:elevation="0dp"
             android:descendantFocusability="afterDescendants"
             app:itemIconTint="@color/item_select_color"
@@ -68,7 +69,7 @@
             android:layout_height="@dimen/nav_view_height"
             android:layout_width="0dp"
             app:labelVisibilityMode="unlabeled"
-            android:background="@android:color/transparent"
+            android:background="#80000000"
             android:elevation="0dp"
 
             app:itemIconTint="@color/item_select_color"

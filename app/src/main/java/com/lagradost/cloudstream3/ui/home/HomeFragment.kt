@@ -667,37 +667,44 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
      * Updates the blurred hero backdrop (Option 2, extended to the activity
      * level): the backdrop shows the current hero item's image, blurred once
      * and cached in HomeBackdropBlur; every main screen reuses that same
-     * cached bitmap. Falls back to the plain black background when there is
-     * no hero image.
+     * cached bitmap.
+     *
+     * Keep-last-good: a hero-less load (provider switch with no preview,
+     * failed load, or an item with no poster) must NEVER wipe the cached
+     * backdrop — the last good backdrop stays visible, so the nav bar
+     * treatment reads the same on every screen instead of flipping to
+     * plain black. The cache is only replaced by a successfully loaded
+     * hero image. A truly fresh launch with no hero ever loaded still
+     * falls back to plain black.
      */
+    private var latestHeroUrl: String? = null
+
     private fun updateHomeBackdrop(item: LoadResponse?) {
         val appContext = context?.applicationContext ?: return
         val url = item?.backgroundPosterUrl ?: item?.posterUrl
         if (url.isNullOrBlank()) {
-            HomeBackdropBlur.cachedUrl = null
-            HomeBackdropBlur.cachedBitmap = null
-            HomeBackdropBlur.hideInActivity(activity)
+            // No hero of its own: keep showing the last cached backdrop.
+            HomeBackdropBlur.applyCachedToActivity(activity)
             return
         }
         if (url == HomeBackdropBlur.cachedUrl && HomeBackdropBlur.cachedBitmap != null) {
             HomeBackdropBlur.applyCachedToActivity(activity)
             return
         }
-        HomeBackdropBlur.cachedUrl = url
+        latestHeroUrl = url
         ioSafe {
             val bitmap = HomeBackdropBlur.loadBlurredBitmap(
                 appContext, url, item?.posterHeaders
             )
             withContext(Dispatchers.Main) {
                 // Only apply if this hero is still the current one.
-                if (url == HomeBackdropBlur.cachedUrl) {
-                    if (bitmap == null) {
-                        HomeBackdropBlur.cachedBitmap = null
-                        HomeBackdropBlur.hideInActivity(activity)
-                    } else {
+                if (url == latestHeroUrl) {
+                    if (bitmap != null) {
+                        HomeBackdropBlur.cachedUrl = url
                         HomeBackdropBlur.cachedBitmap = bitmap
-                        HomeBackdropBlur.applyCachedToActivity(activity)
                     }
+                    // On failure the old cached backdrop stays visible.
+                    HomeBackdropBlur.applyCachedToActivity(activity)
                 }
             }
         }

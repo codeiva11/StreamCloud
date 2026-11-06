@@ -202,10 +202,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         const val TAG = "MAINACT"
 
-        // The bottom nav bar / rail is fully transparent (background +
-        // elevation set in activity_main.xml / activity_main_tv.xml) so the
-        // blurred hero backdrop shows through it; the selected-item pill
-        // and icons stay as they are.
+        // The bottom nav bar / rail has a semi-transparent dark tint
+        // (#80000000, 50% black, background set in activity_main.xml /
+        // activity_main_tv.xml) so the blurred hero backdrop shows through
+        // it subtly and the icons stay readable on any hero; the
+        // selected-item pill and icons stay as they are.
 
         /** Destinations where the blurred hero backdrop is shown: the five
          * bottom-nav screens plus the download child/queue screens, whose
@@ -1750,8 +1751,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         binding?.navView?.apply {
             itemRippleColor = rippleColor
             itemActiveIndicatorColor = rippleColor
-            // Fully transparent background (XML) so the blurred backdrop
-            // shows through the nav bar.
+            // Semi-transparent dark tint (XML) so the blurred backdrop
+            // shows through the nav bar subtly.
             setupWithNavController(navController)
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
@@ -1775,8 +1776,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            // Fully transparent background (XML) so the blurred backdrop
-            // shows through the nav rail.
+            // Semi-transparent dark tint (XML) so the blurred backdrop
+            // shows through the nav rail subtly.
 
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
