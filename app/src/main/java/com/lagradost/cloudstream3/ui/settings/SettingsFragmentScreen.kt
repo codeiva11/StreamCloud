@@ -352,12 +352,12 @@ object SettingsFragmentScreen : Screen {
             },
             shape = CircleShape,
             colors = TextFieldDefaults.colors(
-                // 70% black transparent, same as the nav bar and the HDHub4U
-                // chip — the old surfaceVariant (#2B2C30) rendered as a solid
-                // black pill over the blurred backdrop, with a grey hint.
-                focusedContainerColor = Color(0xB3000000),
-                unfocusedContainerColor = Color(0xB3000000),
-                disabledContainerColor = Color(0xB3000000),
+                // 50% black transparent — lighter than the nav bar and the
+                // HDHub4U chip (70%), because the wide pill still read too
+                // black over the bright hero blur at 70%.
+                focusedContainerColor = Color(0x80000000),
+                unfocusedContainerColor = Color(0x80000000),
+                disabledContainerColor = Color(0x80000000),
                 focusedTextColor = MaterialTheme.colorScheme.onBackground,
                 unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
                 disabledTextColor = MaterialTheme.colorScheme.onBackground,
