@@ -202,11 +202,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         const val TAG = "MAINACT"
 
-        // Light frosted nav bar / rail (background + elevation set in
-        // activity_main.xml / activity_main_tv.xml): white at 20%
-        // (#33FFFFFF) on phone and TV, so the bar stays transparent, the
-        // blur shows through softly and the bar reads light and clean.
-        // The selected-item pill and icons stay as they are.
+        // Nav bar / rail are the original ones (background
+        // ?attr/primaryGrayBackground in activity_main.xml /
+        // activity_main_tv.xml). The selected-item pill and icons stay
+        // as they are.
 
         /** Destinations where the blurred hero backdrop is shown: the five
          * bottom-nav screens plus the download child/queue screens, whose
@@ -1751,9 +1750,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         binding?.navView?.apply {
             itemRippleColor = rippleColor
             itemActiveIndicatorColor = rippleColor
-            // Light frosted nav bar (background #33FFFFFF in XML, white
-            // at 20%); the blur shows through it softly, the blurred
-            // backdrop stays on the content behind it.
+            // Original nav bar (background ?attr/primaryGrayBackground
+            // in XML); the blurred backdrop stays on the content
+            // behind it.
             setupWithNavController(navController)
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
@@ -1777,9 +1776,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            // Light frosted rail on TV (#33FFFFFF in XML, white at 20%),
-            // light frosted bar on phone landscape; the blurred backdrop
-            // stays on the content behind it.
+            // Original rail on TV (background ?attr/primaryGrayBackground
+            // in XML); the blurred backdrop stays on the content
+            // behind it.
 
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
