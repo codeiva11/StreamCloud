@@ -241,6 +241,7 @@
                     android:id="@+id/result_bookmark_fab"
                     app:icon="@drawable/ic_baseline_bookmark_24"
                     style="@style/ExtendedFloatingActionButton"
+                    app:backgroundTint="@android:color/transparent"
                     tools:ignore="ContentDescription" />
 
             <fragment

@@ -99,6 +99,7 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/result_reload_connection_open_in_browser"
             style="@style/BlackButton"
+            app:backgroundTint="@android:color/transparent"
 
             android:layout_width="wrap_content"
 
@@ -785,6 +786,7 @@
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/result_season_button"
                                     style="@style/MultiSelectButton"
+                                    app:backgroundTint="@android:color/transparent"
                                     android:layout_gravity="center_vertical"
                                     android:layout_marginTop="10dp"
                                     android:layout_marginBottom="10dp"
@@ -802,6 +804,7 @@
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/result_episode_select"
                                     style="@style/MultiSelectButton"
+                                    app:backgroundTint="@android:color/transparent"
                                     android:layout_gravity="center_vertical"
                                     android:layout_marginTop="10dp"
                                     android:layout_marginBottom="10dp"
@@ -819,6 +822,7 @@
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/result_dub_select"
                                     style="@style/MultiSelectButton"
+                                    app:backgroundTint="@android:color/transparent"
                                     android:layout_gravity="center_vertical"
                                     android:layout_marginTop="10dp"
                                     android:layout_marginBottom="10dp"
@@ -837,6 +841,7 @@
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/result_sort_button"
                                     style="@style/MultiSelectButton"
+                                    app:backgroundTint="@android:color/transparent"
                                     android:layout_gravity="center_vertical"
                                     android:layout_marginTop="10dp"
                                     android:layout_marginBottom="10dp"

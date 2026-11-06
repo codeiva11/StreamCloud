@@ -427,6 +427,8 @@ https://developer.android.com/design/ui/tv/samples/jet-fit
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/result_bookmark_Button"
                         style="@style/ResultSmallButtonTV"
+                        android:background="@drawable/home_header_item_tv"
+                        app:iconTint="@color/white"
                         android:focusable="true"
                         android:nextFocusUp="@id/result_bookmark_Button"
                         android:nextFocusDown="@id/result_description"
@@ -451,6 +453,8 @@ https://developer.android.com/design/ui/tv/samples/jet-fit
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/result_favorite_Button"
                         style="@style/ResultSmallButtonTV"
+                        android:background="@drawable/home_header_item_tv"
+                        app:iconTint="@color/white"
                         android:focusable="true"
                         android:nextFocusUp="@id/result_favorite_Button"
                         android:nextFocusDown="@id/result_description"
@@ -475,6 +479,8 @@ https://developer.android.com/design/ui/tv/samples/jet-fit
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/result_subscribe_Button"
                         style="@style/ResultSmallButtonTV"
+                        android:background="@drawable/home_header_item_tv"
+                        app:iconTint="@color/white"
                         android:focusable="true"
                         android:nextFocusUp="@id/result_subscribe_Button"
                         android:nextFocusDown="@id/result_description"
@@ -499,6 +505,8 @@ https://developer.android.com/design/ui/tv/samples/jet-fit
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/result_search_Button"
                         style="@style/ResultSmallButtonTV"
+                        android:background="@drawable/home_header_item_tv"
+                        app:iconTint="@color/white"
                         android:focusable="true"
                         android:nextFocusUp="@id/result_search_Button"
                         android:nextFocusDown="@id/result_description"
@@ -525,6 +533,8 @@ https://developer.android.com/design/ui/tv/samples/jet-fit
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/result_episodes_show_button"
                         style="@style/ResultSmallButtonTV"
+                        android:background="@drawable/home_header_item_tv"
+                        app:iconTint="@color/white"
                         android:focusable="true"
                         android:nextFocusRight="@id/redirect_to_episodes"
                         android:nextFocusUp="@id/result_episodes_show_button"
