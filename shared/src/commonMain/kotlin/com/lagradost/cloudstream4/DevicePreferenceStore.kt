@@ -64,7 +64,7 @@ class UIPreferences(preferences: PreferenceStore) {
         "primary_color_key", "Normal"
     )
     val theme = preferences.getString(
-        "app_theme_key", "GlassBlue"
+        "app_theme_key", "AmoledLight"
     )
     val layout = preferences.getInt(
         "app_layout_key", -1
