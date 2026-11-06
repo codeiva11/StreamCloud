@@ -10,9 +10,14 @@ import com.lagradost.cloudstream4.state.ActionHandler
 import com.lagradost.cloudstream4.state.DefaultStateContainer
 import com.lagradost.cloudstream4.state.SingleActiveQuery
 import com.lagradost.cloudstream4.state.StateContainer
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @Immutable
 data class GithubState(
@@ -202,6 +207,92 @@ class GithubViewModel(
     ActionHandler<GithubAction> {
     private val updateDispatcher = SingleActiveQuery(Dispatchers.IO)
 
+    // Silent downloads live outside the SingleActiveQuery dispatcher: a new
+    // check (or a dialog dismiss) must never cancel an in-flight download
+    // and restart it from scratch. Downloads are keyed by release identity
+    // (tag + asset digest); a second check for the same release awaits the
+    // same download instead of starting a new one, and a completed download
+    // is reused while its cached file still exists.
+    private val silentDownloadMutex = Mutex()
+    private var silentDownloadKey: String? = null
+    private var silentDownload: Deferred<String?>? = null
+
+    /**
+     * Downloads an update apk quietly (retrying once on transient failure)
+     * and returns the cached path, or null when both attempts failed.
+     * Never shows any UI. The download itself is not cancelled when the
+     * awaiting search is cancelled (e.g. the user dismisses the Loading
+     * dialog); it keeps running in viewModelScope and populates the cache
+     * for the next check.
+     */
+    private suspend fun silentDownloadCached(
+        url: String,
+        versionTag: String,
+        digest: DigestPair?,
+        key: String,
+        dropStaleCache: Boolean,
+    ): String? {
+        val deferred = silentDownloadMutex.withLock {
+            val existing = silentDownload
+            val reusable = existing != null && silentDownloadKey == key &&
+                (existing.isActive || (existing.isCompleted &&
+                    runCatching { existing.getCompleted() }.getOrNull() != null &&
+                    updater.getCachedUpdatePath(versionTag) != null))
+            if (reusable) {
+                existing!!
+            } else {
+                val created = viewModelScope.async(Dispatchers.IO) {
+                    try {
+                        if (dropStaleCache) {
+                            updater.deleteCachedUpdate(versionTag)
+                        }
+                        updater.downloadSilently(url, versionTag, digest)
+                            ?: updater.downloadSilently(url, versionTag, digest)
+                    } catch (_: Throwable) {
+                        null
+                    }
+                }
+                silentDownload = created
+                silentDownloadKey = key
+                created
+            }
+        }
+        return try {
+            deferred.await()
+        } catch (_: CancellationException) {
+            // The search awaiting the download was cancelled; the download
+            // itself keeps running in viewModelScope.
+            null
+        }
+    }
+
+    /** installFromFile that returns false instead of throwing, so a bad cache falls through to a silent re-download. */
+    private suspend fun installFromFileSafe(
+        filePath: String,
+        digest: DigestPair?,
+    ): Boolean {
+        return try {
+            updater.installFromFile(
+                filePath = filePath,
+                settings = settings,
+                digest = digest,
+            ) { progress, total ->
+                updateState {
+                    copy(
+                        dialog = dialog?.copy(
+                            state = GithubUpdateDialogState.InstallProgress(
+                                progress = progress,
+                                total = total
+                            )
+                        )
+                    )
+                }
+            }
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     override fun onAction(action: GithubAction) {
         when (action) {
             GithubAction.SearchForUpdate -> {
@@ -263,48 +354,59 @@ class GithubViewModel(
 
     private suspend fun installUpdate(file: GithubFile) = dispatchUpdate {
         val digest = DigestPair.parse(file.digest)
+        val key = "${file.tagName}|${file.digest ?: file.nodeId}"
         val cachedPath = updater.getCachedUpdatePath(file.tagName)
 
         // Install from the pre-downloaded cache when it exists and passes digest
         // validation; otherwise download the update fresh.
         val installedFromCache = if (cachedPath != null) {
             // APK was pre-downloaded in the background, install straight from cache
-            updater.installFromFile(
+            installFromFileSafe(
                 filePath = cachedPath,
-                settings = settings,
                 digest = digest,
-            ) { progress, total ->
-                updateState {
-                    copy(
-                        dialog = dialog?.copy(
-                            state = GithubUpdateDialogState.InstallProgress(
-                                progress = progress,
-                                total = total
-                            )
-                        )
-                    )
-                }
-            }
+            )
         } else {
             false
         }
 
         if (!installedFromCache) {
-            updater.update(
-                settings = settings,
+            // No valid cached apk (the silent download failed, or the cache
+            // was rejected on digest): try ONE more silent download. The
+            // dialog stays on the UpdateFound screen while this runs — the
+            // user must never see a download progress popup.
+            val retriedPath = silentDownloadCached(
                 url = file.downloadUrl,
+                versionTag = file.tagName,
                 digest = digest,
-            ) { progress, total ->
+                key = key,
+                dropStaleCache = isPrerelease,
+            )
+            val installedAfterRetry = if (retriedPath != null &&
+                updater.getCachedUpdatePath(file.tagName) != null
+            ) {
+                installFromFileSafe(
+                    filePath = retriedPath,
+                    digest = digest,
+                )
+            } else {
+                false
+            }
+            if (!installedAfterRetry) {
+                // Both silent attempts failed: stay on the UpdateFound dialog
+                // so the user can retry. The failure is not hidden — the
+                // update is still offered, and no download popup is shown.
                 updateState {
                     copy(
                         dialog = dialog?.copy(
-                            state = GithubUpdateDialogState.DownloadProgress(
-                                progress = progress,
-                                total = total
+                            state = GithubUpdateDialogState.UpdateFound(
+                                file = file,
+                                newSha = null,
+                                oldSha = null,
                             )
                         )
                     )
                 }
+                return@dispatchUpdate
             }
         }
         updateState {
@@ -380,20 +482,23 @@ class GithubViewModel(
         }
 
         // An update was found: fetch the apk quietly FIRST, and only show the
-        // dialog once the download is ready (or failed — tapping "Update"
-        // then downloads fresh, so an update is never blocked). This runs on
+        // dialog once the download is ready (or failed — the update is still
+        // offered, and tapping "Update" retries silently, so an update is
+        // never blocked and no download popup ever appears). This runs on
         // BOTH paths: the manual check used to skip the silent download
         // entirely, so tapping Update fresh-downloaded inside the popup
-        // instead of installing from cache.
-        if (prerelease) {
-            // The pre-release tag is floating: a cached apk under this tag may
-            // belong to an older commit, so drop it before re-downloading.
-            updater.deleteCachedUpdate(release.tagName)
-        }
-        updater.downloadSilently(
+        // instead of installing from cache. A second check for the same
+        // release joins the in-flight download instead of cancelling it
+        // and restarting from scratch.
+        // The pre-release tag is floating: a cached apk under this tag may
+        // belong to an older commit, so it is dropped inside the download job
+        // before re-downloading.
+        silentDownloadCached(
             url = release.downloadUrl,
             versionTag = release.tagName,
             digest = DigestPair.parse(release.digest),
+            key = "${release.tagName}|${release.digest ?: release.nodeId}",
+            dropStaleCache = prerelease,
         )
 
         updateState {

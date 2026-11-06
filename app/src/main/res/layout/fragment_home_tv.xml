@@ -158,7 +158,7 @@
         android:layout_height="40dp"
         android:layout_gravity="end"
         android:layout_margin="10dp"
-        android:background="@drawable/player_button_tv_attr"
+        android:background="@drawable/home_header_bg_tv"
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
@@ -168,7 +168,8 @@
             android:layout_gravity="center_vertical"
             android:layout_marginStart="0dp"
             android:layout_marginEnd="0dp"
-            android:background="@drawable/player_button_tv_attr_no_bg"
+            android:background="@drawable/home_header_item_tv"
+            android:textColor="@color/white"
             android:gravity="center"
             android:nextFocusLeft="@id/navigation_home"
             tools:text="Hello!"
@@ -182,7 +183,7 @@
             android:layout_width="50dp"
             android:layout_height="match_parent"
             android:layout_gravity="end"
-            android:background="@drawable/player_button_tv_attr_no_bg"
+            android:background="@drawable/home_header_item_tv"
             android:contentDescription="@string/title_settings"
             android:focusable="true"
             android:nextFocusLeft="@id/home_change_api"
@@ -192,14 +193,14 @@
             android:src="@drawable/ic_baseline_tune_24"
             android:tag="@string/tv_no_focus_tag"
             android:visibility="gone"
-            app:tint="@color/player_on_button_tv_attr" />
+            app:tint="@color/white" />
 
         <ImageView
             android:id="@+id/home_preview_reload_provider"
             android:layout_width="50dp"
             android:layout_height="match_parent"
             android:layout_gravity="end"
-            android:background="@drawable/player_button_tv_attr_no_bg"
+            android:background="@drawable/home_header_item_tv"
             android:contentDescription="@string/reload_provider"
             android:focusable="true"
             android:nextFocusLeft="@id/home_preview_settings_button"
@@ -211,14 +212,14 @@
             android:src="@drawable/ic_refresh"
             android:tag="@string/tv_no_focus_tag"
             android:visibility="gone"
-            app:tint="@color/player_on_button_tv_attr" />
+            app:tint="@color/white" />
 
         <ImageView
             android:id="@+id/home_preview_search_button"
             android:layout_width="50dp"
             android:layout_height="match_parent"
             android:layout_gravity="end"
-            android:background="@drawable/player_button_tv_attr_no_bg"
+            android:background="@drawable/home_header_item_tv"
             android:clickable="true"
             android:contentDescription="@string/search"
             android:focusable="true"
@@ -228,14 +229,14 @@
             android:padding="10dp"
             android:src="@drawable/search_icon"
             android:tag="@string/tv_no_focus_tag"
-            app:tint="@color/player_on_button_tv_attr" />
+            app:tint="@color/white" />
 
         <ImageView
             android:id="@+id/home_random_button_tv"
             android:layout_width="50dp"
             android:layout_height="match_parent"
             android:layout_gravity="end"
-            android:background="@drawable/player_button_tv_attr_no_bg"
+            android:background="@drawable/home_header_item_tv"
             android:clickable="true"
             android:contentDescription="@string/home_random"
             android:focusable="true"
@@ -246,7 +247,7 @@
             android:src="@drawable/ic_baseline_play_arrow_24"
             android:tag="@string/tv_no_focus_tag"
             android:visibility="gone"
-            app:tint="@color/player_on_button_tv_attr" />
+            app:tint="@color/white" />
 
         <ImageView
             android:visibility="gone"
@@ -254,7 +255,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="end"
-            android:background="@drawable/player_button_tv_attr_no_bg"
+            android:background="@drawable/home_header_item_tv"
             android:contentDescription="@string/account"
             android:focusable="true"
             android:nextFocusLeft="@id/home_preview_search_button"
@@ -264,7 +265,7 @@
             android:padding="10dp"
             android:src="@drawable/ic_outline_account_circle_24"
             android:tag="@string/tv_no_focus_tag"
-            app:tint="@color/player_on_button_tv_attr" />
+            app:tint="@color/white" />
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton

@@ -352,16 +352,25 @@ object SettingsFragmentScreen : Screen {
             },
             shape = CircleShape,
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                // 70% black transparent, same as the nav bar and the HDHub4U
+                // chip — the old surfaceVariant (#2B2C30) rendered as a solid
+                // black pill over the blurred backdrop, with a grey hint.
+                focusedContainerColor = Color(0xB3000000),
+                unfocusedContainerColor = Color(0xB3000000),
+                disabledContainerColor = Color(0xB3000000),
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                disabledTextColor = MaterialTheme.colorScheme.onBackground,
                 unfocusedLeadingIconColor = MaterialTheme.colorScheme.onBackground,
                 unfocusedTrailingIconColor = MaterialTheme.colorScheme.onBackground,
                 focusedTrailingIconColor = MaterialTheme.colorScheme.onBackground,
                 focusedLeadingIconColor = MaterialTheme.colorScheme.onBackground,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
-                focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledIndicatorColor = Color.Transparent,
+                focusedPlaceholderColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedPlaceholderColor = MaterialTheme.colorScheme.onBackground,
+                disabledPlaceholderColor = MaterialTheme.colorScheme.onBackground,
                 cursorColor = MaterialTheme.colorScheme.onBackground,
             ),
             leadingIcon = {

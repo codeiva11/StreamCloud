@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV home header item: transparent at rest, blue (?attr/colorPrimary,
+     #3d50fa - the same blue as the rail's selected item) when D-pad focused.
+     The old player_button_tv_attr_no_bg turned the focused item full white.
+     White text/icons stay readable on both states. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/colorPrimary" />
+            <corners android:radius="@dimen/rounded_image_radius" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>
