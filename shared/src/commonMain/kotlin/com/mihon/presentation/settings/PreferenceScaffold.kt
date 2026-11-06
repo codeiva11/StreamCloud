@@ -2,7 +2,9 @@ package com.mihon.presentation.settings
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -25,6 +27,12 @@ fun PreferenceScaffold(
     Scaffold(
         // TODO @WindowInsets remove this when we have converted everything to compose
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        // Fully transparent like the main Settings screen (26f9c1d8): the
+        // blurred hero backdrop shows through; contentColor is set
+        // explicitly because Transparent matches no scheme color and
+        // contentColorFor() would fall back to black text.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             AppBar(
                 modifier = Modifier.focusRequester(top).focusProperties {
@@ -34,6 +42,7 @@ fun PreferenceScaffold(
                 navigateUp = onBackPressed,
                 actions = actions,
                 scrollBehavior = it,
+                backgroundColor = Color.Transparent,
             )
         },
         content = { contentPadding ->

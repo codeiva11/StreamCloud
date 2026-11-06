@@ -209,13 +209,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         /** Destinations where the blurred hero backdrop is shown: the five
          * bottom-nav screens plus the download child/queue screens, whose
-         * layouts are transparent. Every other destination hides it. */
+         * layouts are transparent, plus the settings sub-screens (their
+         * PreferenceScaffold is fully transparent like the main Settings
+         * screen). Every other destination hides it. */
         val BACKDROP_DESTINATIONS = setOf(
             R.id.navigation_home,
             R.id.navigation_search,
             R.id.navigation_library,
             R.id.navigation_downloads,
             R.id.navigation_settings,
+            R.id.navigation_settings_general,
+            R.id.navigation_settings_player,
+            R.id.navigation_settings_ui,
+            R.id.navigation_settings_updates,
+            R.id.navigation_settings_account,
+            R.id.navigation_settings_providers,
             R.id.navigation_download_child,
             R.id.navigation_download_queue,
         )
@@ -541,8 +549,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         ).contains(destination.id)
 
         // Blurred hero backdrop (Option 2, extended): show the shared cached
-        // bitmap on the main screens; hide it everywhere else (player,
-        // results, settings sub-screens) so they keep their plain background.
+        // bitmap on the main screens and the (transparent) settings
+        // sub-screens; hide it everywhere else (player, results) so they
+        // keep their plain background.
         if (BACKDROP_DESTINATIONS.contains(destination.id)) {
             HomeBackdropBlur.applyCachedToActivity(this)
         } else {

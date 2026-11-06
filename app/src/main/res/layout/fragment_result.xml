@@ -377,12 +377,14 @@
                                     android:id="@+id/result_meta_site"
                                     style="@style/SmallBlackButton"
                                     android:layout_gravity="center_vertical"
+                                    app:backgroundTint="@android:color/transparent"
                                     tools:text="Gogoanime" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/result_meta_content_rating"
                                     style="@style/SmallBlackButton"
                                     android:layout_gravity="center_vertical"
+                                    app:backgroundTint="@android:color/transparent"
                                     tools:text="PG-13" />
 
                                 <TextView

@@ -124,6 +124,13 @@ fun AppBar(
                 containerColor = backgroundColor ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
                     elevation = if (isActionMode) 3.dp else 0.dp,
                 ),
+                // When a backgroundColor is given (transparent for the
+                // settings sub-screens), keep it while scrolled too;
+                // otherwise the bar would turn opaque surface on scroll.
+                scrolledContainerColor = backgroundColor
+                    ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
+                        elevation = 3.dp,
+                    ),
             ),
             scrollBehavior = scrollBehavior,
         )
