@@ -8,6 +8,23 @@
     android:layout_height="match_parent"
     tools:context=".ui.home.HomeFragment">
 
+    <!-- Blurred hero backdrop (Option 2): the current hero item's image,
+         blurred and darkened, behind the home list. Flat black stays underneath. -->
+    <ImageView
+        android:id="@+id/home_backdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        android:contentDescription="@null" />
+
+    <View
+        android:id="@+id/home_backdrop_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/home_backdrop_scrim"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/home_loading"
         android:layout_width="match_parent"

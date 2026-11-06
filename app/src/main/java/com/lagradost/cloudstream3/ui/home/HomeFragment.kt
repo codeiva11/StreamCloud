@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -36,6 +37,7 @@ import com.lagradost.cloudstream3.APIHolder.apis
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
 import com.lagradost.cloudstream3.AllLanguagesName
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.SearchResponse
@@ -76,6 +78,7 @@ import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.BackPressedCallbackHelper
 import com.lagradost.cloudstream3.utils.BackPressedCallbackHelper.attachBackPressedCallback
 import com.lagradost.cloudstream3.utils.BackPressedCallbackHelper.detachBackPressedCallback
+import com.lagradost.cloudstream3.utils.Coroutines
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.EmptyEvent
@@ -638,6 +641,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
     private var bottomSheetDialog: BottomSheetDialog? = null
     private var homeMasterAdapter: HomeParentItemAdapterPreview? = null
 
+    // Blurred hero backdrop (Option 2): cached bitmap for the current hero item.
+    private var currentBackdropUrl: String? = null
+    private var currentBackdropBitmap: Bitmap? = null
+
     var lastSavedHomepage: String? = null
 
     fun saveHomepageToTV(page: Map<String, HomeViewModel.ExpandableHomepageList>) {
@@ -657,6 +664,50 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             deleteAll()
             // insert the program from first array
             addMovies(data.list.list)
+        }
+    }
+
+    /**
+     * Updates the blurred hero backdrop behind the home list (Option 2).
+     * The backdrop shows the current hero item's image, blurred once and
+     * cached; it is never re-blurred on scroll. Falls back to the plain
+     * black background when there is no hero image.
+     */
+    private fun updateHomeBackdrop(item: LoadResponse?) {
+        val appContext = context?.applicationContext ?: return
+        val url = item?.backgroundPosterUrl ?: item?.posterUrl
+        if (url.isNullOrBlank()) {
+            currentBackdropUrl = null
+            currentBackdropBitmap = null
+            binding?.homeBackdrop?.isGone = true
+            binding?.homeBackdropScrim?.isGone = true
+            return
+        }
+        if (url == currentBackdropUrl && currentBackdropBitmap != null) {
+            binding?.homeBackdrop?.isVisible = true
+            binding?.homeBackdropScrim?.isVisible = true
+            return
+        }
+        currentBackdropUrl = url
+        ioSafe {
+            val bitmap = HomeBackdropBlur.loadBlurredBitmap(
+                appContext, url, item.posterHeaders
+            )
+            Coroutines.main {
+                // Only apply if this hero is still the current one.
+                if (url != currentBackdropUrl) return@main
+                val binding = binding ?: return@main
+                if (bitmap == null) {
+                    currentBackdropBitmap = null
+                    binding.homeBackdrop.isGone = true
+                    binding.homeBackdropScrim.isGone = true
+                } else {
+                    currentBackdropBitmap = bitmap
+                    binding.homeBackdrop.setImageBitmap(bitmap)
+                    binding.homeBackdrop.isVisible = true
+                    binding.homeBackdropScrim.isVisible = true
+                }
+            }
         }
     }
 
@@ -694,7 +745,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
             }
 
             homeMasterAdapter = HomeParentItemAdapterPreview(
-                homeViewModel, accountViewModel
+                homeViewModel, accountViewModel,
+                onHeroChanged = ::updateHomeBackdrop
             )
             homeMasterRecycler.setRecycledViewPool(ParentItemAdapter.sharedPool)
             homeMasterRecycler.adapter = homeMasterAdapter

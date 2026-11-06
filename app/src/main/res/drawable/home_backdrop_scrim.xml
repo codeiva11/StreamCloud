@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Darkens the blurred hero backdrop so poster cards and text stay readable:
+     darker at the top and bottom, lighter in the middle. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:startColor="#B3000000"
+        android:centerColor="#66000000"
+        android:endColor="#B3000000"
+        android:type="linear" />
+</shape>
