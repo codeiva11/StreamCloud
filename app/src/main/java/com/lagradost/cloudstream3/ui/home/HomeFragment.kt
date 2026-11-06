@@ -78,8 +78,9 @@ import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.BackPressedCallbackHelper
 import com.lagradost.cloudstream3.utils.BackPressedCallbackHelper.attachBackPressedCallback
 import com.lagradost.cloudstream3.utils.BackPressedCallbackHelper.detachBackPressedCallback
-import com.lagradost.cloudstream3.utils.Coroutines
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.EmptyEvent
 import com.lagradost.cloudstream3.utils.SubtitleHelper.getFlagFromIso
@@ -691,21 +692,24 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(
         currentBackdropUrl = url
         ioSafe {
             val bitmap = HomeBackdropBlur.loadBlurredBitmap(
-                appContext, url, item.posterHeaders
+                appContext, url, item?.posterHeaders
             )
-            Coroutines.main {
+            withContext(Dispatchers.Main) {
                 // Only apply if this hero is still the current one.
-                if (url != currentBackdropUrl) return@main
-                val binding = binding ?: return@main
-                if (bitmap == null) {
-                    currentBackdropBitmap = null
-                    binding.homeBackdrop.isGone = true
-                    binding.homeBackdropScrim.isGone = true
-                } else {
-                    currentBackdropBitmap = bitmap
-                    binding.homeBackdrop.setImageBitmap(bitmap)
-                    binding.homeBackdrop.isVisible = true
-                    binding.homeBackdropScrim.isVisible = true
+                if (url == currentBackdropUrl) {
+                    val binding = binding
+                    if (binding != null) {
+                        if (bitmap == null) {
+                            currentBackdropBitmap = null
+                            binding.homeBackdrop.isGone = true
+                            binding.homeBackdropScrim.isGone = true
+                        } else {
+                            currentBackdropBitmap = bitmap
+                            binding.homeBackdrop.setImageBitmap(bitmap)
+                            binding.homeBackdrop.isVisible = true
+                            binding.homeBackdropScrim.isVisible = true
+                        }
+                    }
                 }
             }
         }
