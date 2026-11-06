@@ -202,7 +202,13 @@ object SettingsFragmentScreen : Screen {
             }
         }
 
-        Scaffold(containerColor = Color.Transparent) { _ ->
+        Scaffold(
+            containerColor = Color.Transparent,
+            // Transparent matches no scheme color, so contentColorFor() would
+            // resolve to Unspecified and text would fall back to black.
+            // Pass onBackground explicitly so text stays readable over the backdrop.
+            contentColor = MaterialTheme.colorScheme.onBackground,
+        ) { _ ->
             Column(modifier = Modifier.verticalScroll(outerListState)) {
                 Spacer(modifier = Modifier.height(MaterialTheme.padding.small))
 
