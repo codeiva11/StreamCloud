@@ -324,9 +324,10 @@ class GithubViewModel(
             state = GithubUpdateDialogState.Loading
         )
 
-        // Manual checks show the Loading dialog while searching, the user asked
-        // for feedback. Automatic checks stay fully silent until an update is
-        // found AND its apk is downloaded and ready, so no popup appears first.
+        // Manual checks show the Loading dialog while searching AND while the
+        // apk is being pre-downloaded, the user asked for feedback. Automatic
+        // checks stay fully silent until an update is found AND its apk is
+        // downloaded and ready, so no popup appears first.
         if (fromUser) {
             updateState {
                 copy(dialog = baseDialog)
@@ -378,21 +379,22 @@ class GithubViewModel(
             return@dispatchUpdate
         }
 
-        // Automated check found an update: fetch the apk quietly FIRST, and only
-        // show the dialog once the download is ready (or failed — tapping
-        // "Update" then downloads fresh, so an update is never blocked).
-        if (!fromUser) {
-            if (prerelease) {
-                // The pre-release tag is floating: a cached apk under this tag may
-                // belong to an older commit, so drop it before re-downloading.
-                updater.deleteCachedUpdate(release.tagName)
-            }
-            updater.downloadSilently(
-                url = release.downloadUrl,
-                versionTag = release.tagName,
-                digest = DigestPair.parse(release.digest),
-            )
+        // An update was found: fetch the apk quietly FIRST, and only show the
+        // dialog once the download is ready (or failed — tapping "Update"
+        // then downloads fresh, so an update is never blocked). This runs on
+        // BOTH paths: the manual check used to skip the silent download
+        // entirely, so tapping Update fresh-downloaded inside the popup
+        // instead of installing from cache.
+        if (prerelease) {
+            // The pre-release tag is floating: a cached apk under this tag may
+            // belong to an older commit, so drop it before re-downloading.
+            updater.deleteCachedUpdate(release.tagName)
         }
+        updater.downloadSilently(
+            url = release.downloadUrl,
+            versionTag = release.tagName,
+            digest = DigestPair.parse(release.digest),
+        )
 
         updateState {
             copy(

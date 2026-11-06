@@ -202,12 +202,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         const val TAG = "MAINACT"
 
-        // Netflix-style nav bar / rail (background + elevation set in
-        // activity_main.xml / activity_main_tv.xml): solid near-black
-        // #141414 bar on phone, dark translucent #CC000000 rail on TV, so
-        // the bar looks the same on every screen and never depends on the
-        // blurred hero backdrop. The selected-item pill and icons stay as
-        // they are.
+        // Light frosted nav bar / rail (background + elevation set in
+        // activity_main.xml / activity_main_tv.xml): white at 20%
+        // (#33FFFFFF) on phone and TV, so the bar stays transparent, the
+        // blur shows through softly and the bar reads light and clean.
+        // The selected-item pill and icons stay as they are.
 
         /** Destinations where the blurred hero backdrop is shown: the five
          * bottom-nav screens plus the download child/queue screens, whose
@@ -1752,8 +1751,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         binding?.navView?.apply {
             itemRippleColor = rippleColor
             itemActiveIndicatorColor = rippleColor
-            // Solid Netflix-style dark bar (background #141414 in XML);
-            // the blurred backdrop stays on the content behind it.
+            // Light frosted nav bar (background #33FFFFFF in XML, white
+            // at 20%); the blur shows through it softly, the blurred
+            // backdrop stays on the content behind it.
             setupWithNavController(navController)
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
@@ -1777,9 +1777,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            // Dark translucent Netflix-TV-style rail on TV (#CC000000 in
-            // XML), solid dark bar on phone landscape; the blurred
-            // backdrop stays on the content behind it.
+            // Light frosted rail on TV (#33FFFFFF in XML, white at 20%),
+            // light frosted bar on phone landscape; the blurred backdrop
+            // stays on the content behind it.
 
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(

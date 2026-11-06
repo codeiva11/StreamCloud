@@ -13,9 +13,10 @@
         android:layout_height="match_parent">
 
         <!-- Blurred hero backdrop (Option 2, extended): shared activity-level
-             backdrop behind the fragment container. The nav rail is Netflix
-             TV style: dark translucent #CC000000 (~80% black, background in
-             XML, elevation 0), so only a hint of the blur shows through it.
+             backdrop behind the fragment container. The nav rail is a light
+             frosted tint: white at 20% (#33FFFFFF, background in XML,
+             elevation 0), so the rail stays transparent, the blur shows
+             through softly and the rail reads light and clean, not dark.
              The scrim starts after the rail, so it never darkens the strip
              behind it. -->
         <ImageView
@@ -57,7 +58,7 @@
             android:id="@+id/nav_rail_view"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:background="#CC000000"
+            android:background="#33FFFFFF"
             android:elevation="0dp"
             android:descendantFocusability="afterDescendants"
             android:maxWidth="@dimen/nav_rail_view_width"
@@ -91,7 +92,7 @@
             android:id="@+id/nav_view"
             android:layout_width="0dp"
             android:layout_height="@dimen/nav_view_height"
-            android:background="#141414"
+            android:background="#33FFFFFF"
             android:elevation="0dp"
             android:visibility="gone"
             app:itemIconTint="@color/item_select_color"
