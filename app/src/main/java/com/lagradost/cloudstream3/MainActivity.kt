@@ -181,6 +181,8 @@ import com.lagradost.cloudstream3.utils.setTextHtml
 import com.lagradost.cloudstream3.utils.txt
 import com.lagradost.cloudstream4.compose.CloudStreamThemeAppSettings
 import com.lagradost.cloudstream4.theme.CloudStreamTheme
+import com.lagradost.cloudstream4.viewmodels.GithubAction
+import com.lagradost.cloudstream4.viewmodels.GithubViewModel
 import com.lagradost.safefile.SafeFile
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -677,6 +679,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
+    /**
+     * Best-effort event-driven update re-check (resume / home). Skips
+     * silently if the update ViewModel is not created yet (e.g. the first
+     * onResume, or the destination listener firing immediately on
+     * registration before the first composition) — the one-shot auto check
+     * in MainActivityScreen covers startup.
+     */
+    private fun recheckForUpdate() {
+        runCatching {
+            ViewModelProvider(this)[GithubViewModel::class.java]
+                .onAction(GithubAction.RecheckForUpdate)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         afterPluginsLoadedEvent += ::onAllPluginsLoaded
@@ -688,6 +704,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } catch (e: Exception) {
             logError(e)
         }
+        // A build published while the app sits open would otherwise never
+        // surface a popup until the next process restart: the one-shot
+        // auto check only runs when the update ViewModel is created.
+        recheckForUpdate()
     }
 
     override fun onPause() {
@@ -1743,6 +1763,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 attachBackPressedCallback("MainActivity") {
                     showConfirmExitDialog(settingsManager)
                 }
+                // Same as onResume: a build published while the app sits
+                // open (e.g. TV on Home for hours) is found when returning
+                // home, silently downloaded, and the popup appears.
+                recheckForUpdate()
             } else detachBackPressedCallback("MainActivity")
         }
 

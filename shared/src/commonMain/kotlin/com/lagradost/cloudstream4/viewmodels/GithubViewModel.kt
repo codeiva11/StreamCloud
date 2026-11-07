@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lagradost.cloudstream3.mvvm.safe
+import com.lagradost.cloudstream3.mvvm.safeAsync
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream4.AppSettings
 import com.lagradost.cloudstream4.state.ActionHandler
@@ -65,6 +66,11 @@ data class GithubFile(
 @Immutable
 sealed class GithubAction {
     object AutoSearchForUpdate : GithubAction()
+    // Event-driven re-check (app resumed / navigated home). The one-shot
+    // AutoSearchForUpdate only runs when the ViewModel is created, so a
+    // build published while the app sits open would otherwise never
+    // surface a popup until the next process restart.
+    object RecheckForUpdate : GithubAction()
     object SearchForUpdate : GithubAction()
     object Dismiss : GithubAction()
     data class SkipThisUpdate(val file: GithubFile) : GithubAction()
@@ -207,6 +213,12 @@ class GithubViewModel(
     ActionHandler<GithubAction> {
     private val updateDispatcher = SingleActiveQuery(Dispatchers.IO)
 
+    // Release the user dismissed (Cancel) within this process lifetime, so
+    // event-driven re-checks do not re-show a popup they just dismissed.
+    // A process restart resets this, matching the existing behaviour where
+    // a dismissed update is offered again on the next launch.
+    private var dismissedUpdateNodeId: String? = null
+
     // Silent downloads live outside the SingleActiveQuery dispatcher: a new
     // check (or a dialog dismiss) must never cancel an in-flight download
     // and restart it from scratch. Downloads are keyed by release identity
@@ -302,6 +314,13 @@ class GithubViewModel(
             }
 
             GithubAction.Dismiss -> {
+                // Remember a dismissed update so re-checks (resume / home)
+                // do not nag the user with the same release again in this
+                // session. A newer release (different node id) still shows.
+                val dialogState = state.value.dialog?.state
+                if (dialogState is GithubUpdateDialogState.UpdateFound) {
+                    dismissedUpdateNodeId = dialogState.file.nodeId
+                }
                 viewModelScope.launch {
                     updateDispatcher.cancel()
                     updateState { copy(dialog = null) }
@@ -317,6 +336,14 @@ class GithubViewModel(
                 if (!isDebug && settings.updates.showAppUpdates.get()) {
                     ioSafe {
                         searchForUpdate(prerelease = isPrerelease, fromUser = false)
+                    }
+                }
+            }
+
+            GithubAction.RecheckForUpdate -> {
+                if (!isDebug && settings.updates.showAppUpdates.get()) {
+                    ioSafe {
+                        recheckForUpdate()
                     }
                 }
             }
@@ -416,6 +443,36 @@ class GithubViewModel(
         }
     }
 
+    /**
+     * Event-driven re-check (app resumed / navigated home). Detection
+     * first, and only detection: for pre-release builds the tag sha is
+     * compared with the installed build sha (one API call). If it still
+     * matches, there is nothing new — no dialog state is touched and no
+     * in-flight search is disturbed. Only when a newer commit exists does
+     * the full search run (silent download first, then the popup). Stable
+     * builds have no tag sha to compare, so they go straight to the full
+     * search, which applies its own display-name check.
+     */
+    private suspend fun recheckForUpdate() {
+        // Never disturb a dialog that is already on screen (an update being
+        // offered, or a manual check in progress) — the manual check will
+        // finish on its own, and the offered update stays offered.
+        if (state.value.dialog != null) return
+
+        if (isPrerelease) {
+            val newSha = safeAsync {
+                repository.getSha(
+                    tag = remotePrereleaseTag,
+                    userName = remoteUserName,
+                    repository = remoteRepository,
+                )
+            } ?: return
+            if (newSha.take(7) == buildSha.take(7)) return
+        }
+
+        searchForUpdate(prerelease = isPrerelease, fromUser = false)
+    }
+
     private suspend fun searchForUpdate(
         prerelease: Boolean,
         fromUser: Boolean,
@@ -473,8 +530,9 @@ class GithubViewModel(
             return@dispatchUpdate
         }
 
-        // If this was automated, and we have pressed "skip this update" then check the node-id
-        if (!fromUser && release.nodeId == settings.updates.skipUpdate.get()) {
+        // If this was automated, and we have pressed "skip this update" (or
+        // dismissed it in this session) then check the node-id
+        if (!fromUser && (release.nodeId == settings.updates.skipUpdate.get() || release.nodeId == dismissedUpdateNodeId)) {
             updateState {
                 copy(dialog = baseDialog.copy(state = GithubUpdateDialogState.NoUpdateFound))
             }
