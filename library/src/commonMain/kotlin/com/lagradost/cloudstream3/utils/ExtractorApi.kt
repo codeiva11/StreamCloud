@@ -255,7 +255,6 @@ import com.lagradost.cloudstream3.extractors.Uasopt
 import com.lagradost.cloudstream3.extractors.Up4FunTop
 import com.lagradost.cloudstream3.extractors.Up4Stream
 import com.lagradost.cloudstream3.extractors.Upstream
-import com.lagradost.cloudstream3.extractors.UpstreamExtractor
 import com.lagradost.cloudstream3.extractors.Uqload
 import com.lagradost.cloudstream3.extractors.Uqload1
 import com.lagradost.cloudstream3.extractors.Uqload2
@@ -1023,7 +1022,6 @@ val extractorApis: AtomicMutableList<ExtractorApi> = atomicListOf(
     StreamSB10(),
     StreamSB11(),
     SBfull(),
-    // Streamhub(), cause Streamhub2() works
     Streamhub2(),
     Ssbstream(),
     Sbthe(),
@@ -1056,7 +1054,6 @@ val extractorApis: AtomicMutableList<ExtractorApi> = atomicListOf(
     Uqloadbz(),
     Evoload(),
     Evoload1(),
-    UpstreamExtractor(),
 
     Odnoklassniki(),
     TauVideo(),
