@@ -573,6 +573,12 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/result_add_sync"
                             style="@style/WhiteButton"
+                            android:textColor="?attr/textColor"
+                            app:backgroundTint="@android:color/transparent"
+                            app:iconTint="?attr/textColor"
+                            app:rippleColor="?attr/textColor"
+                            app:strokeColor="@color/white_transparent_toggle"
+                            app:strokeWidth="2dp"
                             android:layout_width="match_parent"
                             android:layout_gravity="center_vertical"
                             android:layout_marginStart="0dp"
@@ -594,6 +600,12 @@
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/result_resume_series_button"
                                 style="@style/WhiteButton"
+                                android:textColor="?attr/textColor"
+                                app:backgroundTint="@android:color/transparent"
+                                app:iconTint="?attr/textColor"
+                                app:rippleColor="?attr/textColor"
+                                app:strokeColor="@color/white_transparent_toggle"
+                                app:strokeWidth="2dp"
                                 android:layout_width="match_parent"
                                 android:layout_margin="0dp"
                                 android:visibility="visible" />
@@ -614,12 +626,12 @@
                                     <ImageView
                                         android:id="@+id/episode_play_icon"
                                         style="@style/ContinueWatchingPlayUnderlayProgress"
-                                        app:tint="?attr/black" />
+                                        app:tint="?attr/textColor" />
 
                                     <com.google.android.material.progressindicator.CircularProgressIndicator
                                         android:id="@+id/result_resume_series_progress"
                                         style="@style/ContinueWatchingCircularProgress"
-                                        app:indicatorColor="?attr/iconGrayBackground"
+                                        app:indicatorColor="?attr/textColor"
                                         app:trackColor="@color/skipOpTransparent"
                                         tools:progress="50" />
                                 </FrameLayout>
@@ -636,7 +648,7 @@
                                     android:maxLines="1"
                                     android:paddingStart="5dp"
                                     android:textAllCaps="false"
-                                    android:textColor="?attr/iconGrayBackground"
+                                    android:textColor="?attr/textColor"
                                     android:textSize="15sp"
                                     android:textStyle="bold"
                                     android:visibility="visible"
@@ -655,7 +667,7 @@
                                     android:maxLines="1"
                                     android:paddingStart="5dp"
                                     android:textAllCaps="false"
-                                    android:textColor="?attr/iconGrayBackground"
+                                    android:textColor="?attr/textColor"
                                     android:textSize="15sp"
                                     android:textStyle="bold"
                                     android:visibility="gone"
@@ -676,6 +688,12 @@
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/result_next_series_button"
                                 style="@style/WhiteButton"
+                                android:textColor="?attr/textColor"
+                                app:backgroundTint="@android:color/transparent"
+                                app:iconTint="?attr/textColor"
+                                app:rippleColor="?attr/textColor"
+                                app:strokeColor="@color/white_transparent_toggle"
+                                app:strokeWidth="2dp"
                                 android:layout_width="match_parent"
                                 android:layout_gravity="center_vertical"
                                 android:layout_marginVertical="5dp"
@@ -707,6 +725,12 @@
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/result_play_movie"
                                     style="@style/WhiteButton"
+                                    android:textColor="?attr/textColor"
+                                    app:backgroundTint="@android:color/transparent"
+                                    app:iconTint="?attr/textColor"
+                                    app:rippleColor="?attr/textColor"
+                                    app:strokeColor="@color/white_transparent_toggle"
+                                    app:strokeWidth="2dp"
                                     android:layout_width="match_parent"
                                     android:layout_gravity="center_vertical"
                                     android:layout_marginStart="0dp"

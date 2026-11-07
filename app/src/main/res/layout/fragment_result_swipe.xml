@@ -1,10 +1,86 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:orientation="vertical"
         style="@style/AlertDialogCustom"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
+    <FrameLayout
+            android:visibility="gone"
+            android:id="@+id/result_fullscreen_holder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+    </FrameLayout>
+
+    <FrameLayout
+            android:id="@+id/result_main_holder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        <com.discord.panels.OverlappingPanelsLayout
+                android:id="@+id/result_overlapping_panels"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+            <!-- Set layout_gravity on the start panel to "start" -->
+            <FrameLayout
+                    android:visibility="gone"
+                    android:id="@+id/start_panel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="start">
+
+                <include layout="@layout/result_sync" android:id="@+id/result_sync"/>
+            </FrameLayout>
+
+            <FrameLayout
+                    android:id="@+id/center_panel"
+                    android:layout_gravity="center"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                <include layout="@layout/fragment_result" android:id="@+id/fragment_result" />
+
+            </FrameLayout>
+
+            <!-- Set layout_gravity on the end panel to "end" -->
+            <FrameLayout
+                    android:id="@+id/end_panel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="end">
+
+                <include layout="@layout/result_recommendations" android:id="@+id/result_recommendations" />
+            </FrameLayout>
+        </com.discord.panels.OverlappingPanelsLayout>
+
+        <LinearLayout
+                android:layout_gravity="bottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    android:id="@+id/result_bookmark_fab"
+                    app:icon="@drawable/ic_baseline_bookmark_24"
+                    style="@style/ExtendedFloatingActionButton"
+                    app:backgroundTint="@android:color/transparent"
+                    tools:ignore="ContentDescription" />
+
+            <fragment
+                    app:customCastBackgroundColor="?attr/primaryBlackBackground"
+                    app:castControlButtons="@array/cast_mini_controller_control_buttons"
+                    android:id="@+id/cast_mini_controller"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    class="com.lagradost.cloudstream3.ui.MyMiniControllerFragment"
+                    tools:ignore="FragmentTagUsage" />
+        </LinearLayout>
+    </FrameLayout>
 
     <FrameLayout
             android:id="@+id/result_top_bar"
@@ -178,81 +254,4 @@
                     app:tint="?attr/textColor" />
         </LinearLayout>
     </FrameLayout>
-
-    <FrameLayout
-            android:visibility="gone"
-            android:id="@+id/result_fullscreen_holder"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-    </FrameLayout>
-
-    <FrameLayout
-            android:id="@+id/result_main_holder"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        <com.discord.panels.OverlappingPanelsLayout
-                android:id="@+id/result_overlapping_panels"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-            <!-- Set layout_gravity on the start panel to "start" -->
-            <FrameLayout
-                    android:visibility="gone"
-                    android:id="@+id/start_panel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="start">
-
-                <include layout="@layout/result_sync" android:id="@+id/result_sync"/>
-            </FrameLayout>
-
-            <FrameLayout
-                    android:id="@+id/center_panel"
-                    android:layout_gravity="center"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                <include layout="@layout/fragment_result" android:id="@+id/fragment_result" />
-
-            </FrameLayout>
-
-            <!-- Set layout_gravity on the end panel to "end" -->
-            <FrameLayout
-                    android:id="@+id/end_panel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="end">
-
-                <include layout="@layout/result_recommendations" android:id="@+id/result_recommendations" />
-            </FrameLayout>
-        </com.discord.panels.OverlappingPanelsLayout>
-
-        <LinearLayout
-                android:layout_gravity="bottom"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-                    android:visibility="gone"
-                    tools:visibility="visible"
-                    android:id="@+id/result_bookmark_fab"
-                    app:icon="@drawable/ic_baseline_bookmark_24"
-                    style="@style/ExtendedFloatingActionButton"
-                    app:backgroundTint="@android:color/transparent"
-                    tools:ignore="ContentDescription" />
-
-            <fragment
-                    app:customCastBackgroundColor="?attr/primaryBlackBackground"
-                    app:castControlButtons="@array/cast_mini_controller_control_buttons"
-                    android:id="@+id/cast_mini_controller"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    class="com.lagradost.cloudstream3.ui.MyMiniControllerFragment"
-                    tools:ignore="FragmentTagUsage" />
-        </LinearLayout>
-    </FrameLayout>
-</LinearLayout>
+</FrameLayout>
