@@ -299,10 +299,7 @@ data class DerivedRepositoryState(
 
         val newCountOfTypes = countOfTypes.copyOf()
         for (type in value.info.tvTypes) {
-            newCountOfTypes[type.ordinal] = newCountOfTypes[type.ordinal] - 1
-        }
-        if (value.info.tvTypes.isEmpty()) {
-            newCountOfTypes[TvType.Others.ordinal] -= 1
+            newCountOfTypes[type.ordinal] = newCountOfTypes[type.ordinal] + 1
         }
         val language = if (value.info.language.isNullOrBlank()) "" else value.info.language
         val count = languageCount[language]?.minus(1) ?: 0
