@@ -111,7 +111,46 @@ jobs:
           cp /tmp/custom-backup/ApkUpdater.kt app/src/main/java/com/lagradost/cloudstream3/ui/settings/ApkUpdater.kt 2>/dev/null || true
           cp /tmp/custom-backup/GithubViewModel.kt shared/src/commonMain/kotlin/com/lagradost/cloudstream4/viewmodels/GithubViewModel.kt 2>/dev/null || true
           cp /tmp/custom-backup/MainActivityScreen.kt app/src/main/java/com/lagradost/cloudstream3/MainActivityScreen.kt 2>/dev/null || true
-          cp /tmp/custom-backup/strings.xml app/src/main/res/values/strings.xml 2>/dev/null || true
+          # strings.xml: do NOT restore the backup wholesale — that drops
+          # upstream's new strings (broke the build 2026-11-22: 4 download
+          # toast strings missing while DownloadManager.kt referenced them).
+          # 3-way merge instead: custom entries are those that differ from
+          # upstream at the last sync BASE; apply only those on top of the
+          # cherry-picked file, keeping upstream's additions.
+          python3 - "${{ steps.check.outputs.base }}" <<'PYEOF'
+          import re, subprocess, sys
+          STRING_RE = re.compile(r'^(\s*)<string name="([^"]+)"([^>]*)>(.*?)</string>\s*$')
+          def parse_entries(text):
+              entries = {}
+              for line in text.splitlines():
+                  m = STRING_RE.match(line)
+                  if m:
+                      entries[m.group(2)] = line
+              return entries
+          BASE = sys.argv[1] if len(sys.argv) > 1 else ''
+          try:
+              base_text = subprocess.check_output(['git', 'show', BASE + ':app/src/main/res/values/strings.xml'], text=True) if BASE else ''
+          except subprocess.CalledProcessError:
+              base_text = ''
+          base = parse_entries(base_text)
+          backup = parse_entries(open('/tmp/custom-backup/strings.xml', encoding='utf-8').read())
+          merged_path = 'app/src/main/res/values/strings.xml'
+          merged_text = open(merged_path, encoding='utf-8').read()
+          custom = {k: v for k, v in backup.items() if base.get(k) != v}
+          out = []
+          remaining = dict(custom)
+          for line in merged_text.splitlines():
+              m = STRING_RE.match(line)
+              if m and m.group(2) in remaining:
+                  out.append(remaining.pop(m.group(2)))
+              else:
+                  out.append(line)
+          for k, v in remaining.items():
+              idx = next((i for i, l in enumerate(out) if l.strip() == '</resources>'), len(out))
+              out.insert(idx, v)
+          open(merged_path, 'w', encoding='utf-8').write('\n'.join(out) + '\n')
+          print('strings.xml merged, custom entries applied: ' + ', '.join(sorted(custom)))
+          PYEOF
           cp /tmp/custom-backup/RepositoryManager.kt app/src/main/java/com/lagradost/cloudstream3/plugins/RepositoryManager.kt 2>/dev/null || true
           cp /tmp/custom-backup/MainActivity.kt app/src/main/java/com/lagradost/cloudstream3/MainActivity.kt 2>/dev/null || true
           cp /tmp/custom-backup/DataStoreHelper.kt app/src/main/java/com/lagradost/cloudstream3/utils/DataStoreHelper.kt 2>/dev/null || true
